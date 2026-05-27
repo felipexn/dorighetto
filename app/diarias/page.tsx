@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { CheckCircle2, FileClock, Pencil, Trash2 } from "lucide-react";
+import { FileClock, Pencil, Trash2, Eye } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/ui";
-import { createDailyEntryAction, deleteDailyEntryAction, payFortnightAction } from "@/app/actions";
+import { createDailyEntryAction, deleteDailyEntryAction } from "@/app/actions";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 import { toDateInput } from "@/lib/diarias";
@@ -129,16 +129,19 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
         </div>
         <div className="summary-grid">
           {pending.map((item) => (
-            <form className="summary-card" action={payFortnightAction} key={`${item.employeeName}-${item.role}`}>
-              <input type="hidden" name="employeeName" value={item.employeeName} />
+            <article className="summary-card" key={`${item.employeeName}-${item.role}`}>
               <h3>{item.employeeName}</h3>
               <span>{item.role}</span>
               <div><small>Dias</small><strong>{item._count.id}</strong></div>
               <div><small>Diarias</small><strong>{formatCurrency(decimalToNumber(item._sum.dailyValue ?? 0))}</strong></div>
               <div><small>Horas extras</small><strong>{formatCurrency(decimalToNumber(item._sum.overtimeTotal ?? 0))}</strong></div>
               <div><small>Total</small><strong>{formatCurrency(decimalToNumber(item._sum.dayTotal ?? 0))}</strong></div>
-              {isAdmin ? <button type="submit"><CheckCircle2 size={18} /> Pagar</button> : null}
-            </form>
+              {isAdmin ? (
+                <Link className="button" href={`/diarias/pagamento/${encodeURIComponent(item.employeeName)}`}>
+                  <Eye size={18} /> Ver pagamento
+                </Link>
+              ) : null}
+            </article>
           ))}
         </div>
       </section>
