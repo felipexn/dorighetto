@@ -1,13 +1,16 @@
-import PDFDocument from "pdfkit";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/format";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ id: string }>;
 };
 
 export async function GET(_: Request, { params }: Props) {
+  const { prisma } = await import("@/lib/prisma");
+  const PDFDocument = (await import("pdfkit")).default;
   const { id } = await params;
   const closure = await prisma.payrollClosure.findUnique({
     where: { id },
