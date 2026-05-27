@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { createSession, destroySession, requireAdmin } from "@/lib/session";
 import { parseMoney, requiredText } from "@/lib/finance";
 import { makeReceiptNumber, parseDecimal } from "@/lib/diarias";
+import { ensureDrillingSchema } from "@/lib/drilling-schema";
 
 export async function loginAction(_: unknown, formData: FormData) {
   const email = requiredText(formData, "email").toLowerCase();
@@ -248,6 +249,7 @@ export async function payFortnightAction(formData: FormData) {
 
 export async function createDrillingRecordAction(formData: FormData) {
   await requireAdmin();
+  await ensureDrillingSchema(prisma);
 
   const rawHoleCodes = formData.getAll("holeCode").map((value) => String(value).trim());
   const rawHoleMeters = formData.getAll("holeMeters").map((value) => String(value).trim());
@@ -301,6 +303,7 @@ export async function createDrillingRecordAction(formData: FormData) {
 
 export async function deleteDrillingRecordAction(formData: FormData) {
   await requireAdmin();
+  await ensureDrillingSchema(prisma);
   const id = requiredText(formData, "id");
   await prisma.drillingRecord.delete({ where: { id } });
   revalidatePath("/perfuracao");

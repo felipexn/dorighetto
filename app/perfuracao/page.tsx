@@ -6,6 +6,7 @@ import { PerfuracaoFormFields } from "@/components/perfuracao-form";
 import { createDrillingRecordAction, deleteDrillingRecordAction } from "@/app/actions";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
+import { ensureDrillingSchema } from "@/lib/drilling-schema";
 import { decimalToNumber, formatDate } from "@/lib/format";
 import { toDateInput } from "@/lib/diarias";
 
@@ -55,6 +56,8 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
   let setupWarning = "";
 
   try {
+    await ensureDrillingSchema(prisma);
+
     records = await prisma.drillingRecord.findMany({
       where: {
         teamName: params.equipe || undefined,
