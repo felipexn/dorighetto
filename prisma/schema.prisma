@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  LEITOR
+}
+
+enum EntryType {
+  ENTRADA
+  SAIDA
+}
+
+enum DailyRole {
+  AJUDANTE
+  OPERADOR
+}
+
+enum PaymentStatus {
+  PENDENTE
+  PAGO
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(LEITOR)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model FinancialSheet {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  purpose     String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  entries FinancialEntry[]
+
+  @@map("financial_sheets")
+}
+
+model FinancialEntry {
+  id        String    @id @default(cuid())
+  sheetId   String    @map("sheet_id")
+  date      DateTime
+  type      EntryType
+  item      String
+  quantity  String?
+  value     Decimal   @db.Decimal(14, 2)
+  notes     String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  sheet FinancialSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+
+  @@index([sheetId, date])
+  @@map("financial_entries")
+}
+
+model DailyEntry {
+  id              String        @id @default(cuid())
+  date            DateTime
+  employeeName    String        @map("employee_name")
+  role            DailyRole
+  dailyValue      Decimal       @map("daily_value") @db.Decimal(14, 2)
+  overtimeHours   Decimal       @default(0) @map("overtime_hours") @db.Decimal(8, 2)
+  overtimeRate    Decimal       @default(0) @map("overtime_rate") @db.Decimal(14, 2)
+  overtimeTotal   Decimal       @default(0) @map("overtime_total") @db.Decimal(14, 2)
+  dayTotal        Decimal       @map("day_total") @db.Decimal(14, 2)
+  notes           String?
+  status          PaymentStatus @default(PENDENTE)
+  closureId       String?       @map("closure_id")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  closure PayrollClosure? @relation(fields: [closureId], references: [id])
+
+  @@index([employeeName, date, status])
+  @@index([closureId])
+  @@map("daily_entries")
+}
+
+model PayrollClosure {
+  id            String   @id @default(cuid())
+  employeeName  String   @map("employee_name")
+  role          DailyRole
+  periodStart   DateTime @map("period_start")
+  periodEnd     DateTime @map("period_end")
+  paidAt        DateTime @default(now()) @map("paid_at")
+  daysWorked    Int      @map("days_worked")
+  totalDaily    Decimal  @map("total_daily") @db.Decimal(14, 2)
+  totalOvertime Decimal  @map("total_overtime") @db.Decimal(14, 2)
+  totalPaid     Decimal  @map("total_paid") @db.Decimal(14, 2)
+  receiptNumber String   @unique @map("receipt_number")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  entries DailyEntry[]
+
+  @@index([employeeName, periodStart, periodEnd])
+  @@map("payroll_closures")
+}
+
+model DrillingRecord {
+  id            String      @id @default(cuid())
+  date          DateTime
+  teamName      String      @map("team_name")
+  machineName   String      @map("machine_name")
+  bankName      String      @map("bank_name")
+  activityCode  String      @map("activity_code")
+  motorStart    String      @map("motor_start")
+  motorEnd      String      @map("motor_end")
+  notes         String?
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  holes DrillingHole[]
+
+  @@index([date, teamName])
+  @@map("drilling_records")
+}
+
+model DrillingHole {
+  id        String   @id @default(cuid())
+  recordId  String   @map("record_id")
+  holeCode  String   @map("hole_code")
+  meters    Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  record DrillingRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  @@index([recordId])
+  @@map("drilling_holes")
+}

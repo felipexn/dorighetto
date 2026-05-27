@@ -1,0 +1,709 @@
+﻿[
+    {
+        "name":  "Despesas Compressor Garimpo",
+        "purpose":  "Despesas Compressor Garimpo",
+        "description":  "Planilha financeira cadastrada a partir do controle da empresa.",
+        "entries":  [
+                        {
+                            "date":  "2026-05-02",
+                            "item":  "FILTRO COMPRESSOR",
+                            "quantity":  "1.0",
+                            "type":  "SAIDA",
+                            "value":  265
+                        },
+                        {
+                            "date":  "2026-05-02",
+                            "item":  "CORREIA",
+                            "quantity":  "2.0",
+                            "type":  "SAIDA",
+                            "value":  80
+                        },
+                        {
+                            "date":  "2026-05-02",
+                            "item":  "OLEO DIESEL",
+                            "quantity":  "300 L",
+                            "type":  "SAIDA",
+                            "value":  1750
+                        },
+                        {
+                            "date":  "2026-05-02",
+                            "item":  "BITE",
+                            "quantity":  "2.0",
+                            "type":  "SAIDA",
+                            "value":  100
+                        },
+                        {
+                            "date":  "2026-05-02",
+                            "item":  "OLEO 220",
+                            "quantity":  "20.0",
+                            "type":  "SAIDA",
+                            "value":  550
+                        },
+                        {
+                            "date":  "2026-05-04",
+                            "item":  "ADUBO",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  2500
+                        },
+                        {
+                            "date":  "2026-05-04",
+                            "item":  "FIO",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  1000
+                        },
+                        {
+                            "date":  "2026-05-04",
+                            "item":  "FURAÇÃO",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  3000
+                        },
+                        {
+                            "date":  "2026-05-04",
+                            "item":  "DIESEL",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  2000
+                        },
+                        {
+                            "date":  "2026-05-04",
+                            "item":  "ESCAVADEIRA",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  662
+                        },
+                        {
+                            "date":  "2026-05-06",
+                            "item":  "DIESEL",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  2500
+                        },
+                        {
+                            "date":  "2026-05-06",
+                            "item":  "UNHA",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  1000
+                        },
+                        {
+                            "date":  "2026-05-11",
+                            "item":  "DIESEL",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  3316
+                        },
+                        {
+                            "date":  "2026-05-11",
+                            "item":  "ALIMENTAÇÃO",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  200
+                        },
+                        {
+                            "date":  "2026-05-12",
+                            "item":  "DIESEL",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  1474
+                        },
+                        {
+                            "date":  "2026-05-11",
+                            "item":  "VENDA DE PEDRAS",
+                            "quantity":  "",
+                            "type":  "ENTRADA",
+                            "value":  25000
+                        },
+                        {
+                            "date":  "2026-05-11",
+                            "item":  "TAMBOR DE PLASTICO",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  160
+                        },
+                        {
+                            "date":  "2026-05-14",
+                            "item":  "ESCAVADEIRA",
+                            "quantity":  "graxa",
+                            "type":  "SAIDA",
+                            "value":  580
+                        },
+                        {
+                            "date":  "2026-05-14",
+                            "item":  "bomba da agua caminhão",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  405
+                        },
+                        {
+                            "date":  "2026-05-14",
+                            "item":  "CAMIONETE DIESEL",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  300
+                        },
+                        {
+                            "date":  "2026-05-18",
+                            "item":  "VENDA DE PEDRAS",
+                            "quantity":  "",
+                            "type":  "ENTRADA",
+                            "value":  10000
+                        },
+                        {
+                            "date":  "2026-05-19",
+                            "item":  "VENDA DE PEDRAS",
+                            "quantity":  "CARLIM",
+                            "type":  "ENTRADA",
+                            "value":  9000
+                        },
+                        {
+                            "date":  "2026-05-19",
+                            "item":  "CAMINHAO BICO INJETOR",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  2700
+                        },
+                        {
+                            "date":  "2026-05-19",
+                            "item":  "DIESEL",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  100
+                        }
+                    ]
+    },
+    {
+        "name":  "Entrada e Saida Xinguara",
+        "purpose":  "Entrada e Saida Xinguara",
+        "description":  "Planilha financeira cadastrada a partir do controle da empresa.",
+        "entries":  [
+                        {
+                            "date":  "2026-05-11",
+                            "item":  "BITE",
+                            "quantity":  "5.0",
+                            "type":  "SAIDA",
+                            "value":  3750
+                        },
+                        {
+                            "date":  "2026-05-11",
+                            "item":  "BALDE DE GRAXA",
+                            "quantity":  "46054.0",
+                            "type":  "SAIDA",
+                            "value":  650
+                        },
+                        {
+                            "date":  "2026-05-11",
+                            "item":  "OLEO 68",
+                            "quantity":  "20 LT",
+                            "type":  "SAIDA",
+                            "value":  450
+                        },
+                        {
+                            "date":  "2026-05-11",
+                            "item":  "REBOLO",
+                            "quantity":  "10.0",
+                            "type":  "SAIDA",
+                            "value":  1000
+                        },
+                        {
+                            "date":  "2026-05-11",
+                            "item":  "PUNHO",
+                            "quantity":  "3.0",
+                            "type":  "SAIDA",
+                            "value":  2400
+                        },
+                        {
+                            "date":  "2026-05-11",
+                            "item":  "OLEO 220",
+                            "quantity":  "5 TAMBOR",
+                            "type":  "SAIDA",
+                            "value":  200
+                        },
+                        {
+                            "date":  "2026-05-11",
+                            "item":  "OLEO DISEL",
+                            "quantity":  "CAMIONETE",
+                            "type":  "SAIDA",
+                            "value":  400
+                        },
+                        {
+                            "date":  "2026-05-11",
+                            "item":  "RECEBIMENTO XINGUARA",
+                            "quantity":  "DINHEIRO",
+                            "type":  "ENTRADA",
+                            "value":  37507
+                        },
+                        {
+                            "date":  "2026-05-19",
+                            "item":  "COMPRESSOR 040",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  1250
+                        }
+                    ]
+    },
+    {
+        "name":  "Deposito Cooperativa e Legep",
+        "purpose":  "Deposito Cooperativa e Legep",
+        "description":  "Planilha financeira cadastrada a partir do controle da empresa.",
+        "entries":  [
+                        {
+                            "date":  null,
+                            "item":  "Deposito",
+                            "quantity":  "",
+                            "type":  "ENTRADA",
+                            "value":  24266
+                        },
+                        {
+                            "date":  null,
+                            "item":  "Deposito",
+                            "quantity":  "",
+                            "type":  "ENTRADA",
+                            "value":  50000
+                        },
+                        {
+                            "date":  null,
+                            "item":  "Deposito",
+                            "quantity":  "",
+                            "type":  "ENTRADA",
+                            "value":  80000
+                        },
+                        {
+                            "date":  "2026-04-09",
+                            "item":  "Deposito",
+                            "quantity":  "",
+                            "type":  "ENTRADA",
+                            "value":  80000
+                        },
+                        {
+                            "date":  "2026-04-30",
+                            "item":  "Deposito",
+                            "quantity":  "",
+                            "type":  "ENTRADA",
+                            "value":  81560
+                        }
+                    ]
+    },
+    {
+        "name":  "Despesa Cooperativa e Legep",
+        "purpose":  "Despesa Cooperativa e Legep",
+        "description":  "Planilha financeira cadastrada a partir do controle da empresa.",
+        "entries":  [
+                        {
+                            "date":  "2026-03-07",
+                            "item":  "DESP. CONTA",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  100
+                        },
+                        {
+                            "date":  "2026-03-07",
+                            "item":  "PROG. COOP",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  237
+                        },
+                        {
+                            "date":  "2026-03-29",
+                            "item":  "MULTA DA CARRETA",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  7635.11
+                        },
+                        {
+                            "date":  "2026-03-30",
+                            "item":  "CONTADOR",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  1618
+                        },
+                        {
+                            "date":  "2026-04-10",
+                            "item":  "NOTA BAHIA IMP. EST",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  24990
+                        },
+                        {
+                            "date":  "2026-04-10",
+                            "item":  "IMP. FED",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  10350.03
+                        },
+                        {
+                            "date":  "2026-04-30",
+                            "item":  "CONTADOR",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  1618
+                        },
+                        {
+                            "date":  "2026-04-30",
+                            "item":  "IMPOSTO COOP E LEGEP",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  19872
+                        },
+                        {
+                            "date":  "2026-04-30",
+                            "item":  "DESPESAS CONTA",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  200
+                        },
+                        {
+                            "date":  "2026-04-07",
+                            "item":  "PROGRAMA NF",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  539.68
+                        },
+                        {
+                            "date":  "2026-04-07",
+                            "item":  "SACO, TINTA E BARBANTE",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  4100
+                        },
+                        {
+                            "date":  "2026-04-07",
+                            "item":  "FRETE CAMINHÃO",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  2600
+                        },
+                        {
+                            "date":  "2026-04-07",
+                            "item":  "CHAPA",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  1500
+                        },
+                        {
+                            "date":  "2026-04-07",
+                            "item":  "CHAPA CAMONETE",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  300
+                        },
+                        {
+                            "date":  "2026-04-07",
+                            "item":  "COOP 3%",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  10017.09
+                        },
+                        {
+                            "date":  "2026-05-07",
+                            "item":  "IMP COOP",
+                            "quantity":  "FEDERAL E EST",
+                            "type":  "SAIDA",
+                            "value":  40068.36
+                        },
+                        {
+                            "date":  "2026-05-06",
+                            "item":  "COMPRA DAS PEDRAS",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  333903
+                        },
+                        {
+                            "date":  "2026-05-06",
+                            "item":  "Entrada",
+                            "quantity":  "",
+                            "type":  "ENTRADA",
+                            "value":  315826
+                        }
+                    ]
+    },
+    {
+        "name":  "Despesa Compressor 070 Celeste",
+        "purpose":  "Despesa Compressor 070 Celeste",
+        "description":  "Planilha financeira cadastrada a partir do controle da empresa.",
+        "entries":  [
+                        {
+                            "date":  "2026-05-05",
+                            "item":  "CALÇO DO MOTOR",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  210
+                        },
+                        {
+                            "date":  "2026-05-05",
+                            "item":  "PEÇA DO MOTOR",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  768
+                        },
+                        {
+                            "date":  "2026-05-05",
+                            "item":  "CALÇO DA CAMISA",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  68
+                        },
+                        {
+                            "date":  "2026-05-05",
+                            "item":  "GRACHEIRO",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  150
+                        },
+                        {
+                            "date":  "2026-05-11",
+                            "item":  "OLEO220",
+                            "quantity":  "4 TAMBOR",
+                            "type":  "SAIDA",
+                            "value":  2000
+                        },
+                        {
+                            "date":  "2026-05-11",
+                            "item":  "DIESEL CAMIONTE",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  100
+                        },
+                        {
+                            "date":  "2026-05-11",
+                            "item":  "LUVAS ,MASCÁRA",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  150
+                        }
+                    ]
+    },
+    {
+        "name":  "Despesa Compressor 080 Celeste",
+        "purpose":  "Despesa Compressor 080 Celeste",
+        "description":  "Planilha financeira cadastrada a partir do controle da empresa.",
+        "entries":  [
+                        {
+                            "date":  "2026-05-02",
+                            "item":  "ARTE",
+                            "quantity":  "3.0",
+                            "type":  "SAIDA",
+                            "value":  5100
+                        },
+                        {
+                            "date":  "2026-05-02",
+                            "item":  "LUVA",
+                            "quantity":  "3.0",
+                            "type":  "SAIDA",
+                            "value":  500
+                        },
+                        {
+                            "date":  "2026-05-02",
+                            "item":  "OLEO DIESEL 220",
+                            "quantity":  "40 L",
+                            "type":  "SAIDA",
+                            "value":  1100
+                        },
+                        {
+                            "date":  "2026-05-02",
+                            "item":  "LUVA DE SOLA",
+                            "quantity":  "4 PAR",
+                            "type":  "SAIDA",
+                            "value":  100
+                        },
+                        {
+                            "date":  "2026-05-02",
+                            "item":  "MASCARA",
+                            "quantity":  "30.0",
+                            "type":  "SAIDA",
+                            "value":  100
+                        }
+                    ]
+    },
+    {
+        "name":  "Despesas Diversas Celeste",
+        "purpose":  "Despesas Diversas Celeste",
+        "description":  "Planilha financeira cadastrada a partir do controle da empresa.",
+        "entries":  [
+                        {
+                            "date":  "2026-05-06",
+                            "item":  "BOTA",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  130
+                        },
+                        {
+                            "date":  "2026-05-06",
+                            "item":  "MÁSCARA",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  250
+                        },
+                        {
+                            "date":  "2026-05-06",
+                            "item":  "ÓLEO 220",
+                            "quantity":  "3 TAMBORES",
+                            "type":  "SAIDA",
+                            "value":  1800
+                        },
+                        {
+                            "date":  "2026-05-06",
+                            "item":  "DIESEL CAMIONETE",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  450
+                        },
+                        {
+                            "date":  "2026-05-06",
+                            "item":  "PNEU COMPRESSOR",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  70
+                        },
+                        {
+                            "date":  "2026-05-18",
+                            "item":  "TAMBOR DE OLEO 220",
+                            "quantity":  "4.0",
+                            "type":  "SAIDA",
+                            "value":  2400
+                        },
+                        {
+                            "date":  "2026-05-18",
+                            "item":  "TAMBOR DE GRAXA",
+                            "quantity":  "2.0",
+                            "type":  "SAIDA",
+                            "value":  1500
+                        },
+                        {
+                            "date":  "2026-05-18",
+                            "item":  "LUVA",
+                            "quantity":  "4.0",
+                            "type":  "SAIDA",
+                            "value":  800
+                        },
+                        {
+                            "date":  "2026-05-18",
+                            "item":  "COMBUSTIVEL LEANDRO",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  100
+                        },
+                        {
+                            "date":  "2026-05-18",
+                            "item":  "LAVAGEM CAMIONETE",
+                            "quantity":  "2.0",
+                            "type":  "SAIDA",
+                            "value":  200
+                        },
+                        {
+                            "date":  "2026-05-18",
+                            "item":  "MAQUINA DANIEL",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  4000
+                        },
+                        {
+                            "date":  "2026-05-19",
+                            "item":  "CELIBRIM",
+                            "quantity":  "3.0",
+                            "type":  "SAIDA",
+                            "value":  300
+                        },
+                        {
+                            "date":  "2026-05-19",
+                            "item":  "ROLAMENTO",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  1360
+                        },
+                        {
+                            "date":  "2026-05-19",
+                            "item":  "FIO P/ CELIBRIM",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  306
+                        },
+                        {
+                            "date":  "2026-05-19",
+                            "item":  "BATERIA HILUX",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  600
+                        },
+                        {
+                            "date":  "2026-05-19",
+                            "item":  "GARRA DA BATERIA",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  28
+                        },
+                        {
+                            "date":  "2026-05-19",
+                            "item":  "GASOLINA E FERRAMENTA",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  350
+                        },
+                        {
+                            "date":  "2026-05-19",
+                            "item":  "OLEO HIDRAULICO",
+                            "quantity":  "20 L",
+                            "type":  "SAIDA",
+                            "value":  500
+                        },
+                        {
+                            "date":  "2026-05-19",
+                            "item":  "PW DANIEL",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  4150
+                        },
+                        {
+                            "date":  "2026-05-20",
+                            "item":  "COMPRESSOR 060",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  400
+                        },
+                        {
+                            "date":  "2026-05-21",
+                            "item":  "BARRACA CELESTE",
+                            "quantity":  "2.0",
+                            "type":  "SAIDA",
+                            "value":  1400
+                        },
+                        {
+                            "date":  "2026-05-21",
+                            "item":  "GARRAFA TERMICA",
+                            "quantity":  "2.0",
+                            "type":  "SAIDA",
+                            "value":  300
+                        },
+                        {
+                            "date":  "2026-05-21",
+                            "item":  "TAMBOR DE OLEO 220",
+                            "quantity":  "3.0",
+                            "type":  "SAIDA",
+                            "value":  1800
+                        },
+                        {
+                            "date":  "2026-05-21",
+                            "item":  "BITE",
+                            "quantity":  "4.0",
+                            "type":  "SAIDA",
+                            "value":  2800
+                        },
+                        {
+                            "date":  "2026-05-21",
+                            "item":  "ARTE",
+                            "quantity":  "4.0",
+                            "type":  "SAIDA",
+                            "value":  6000
+                        },
+                        {
+                            "date":  "2026-05-21",
+                            "item":  "COMBUSTIVEL",
+                            "quantity":  "",
+                            "type":  "SAIDA",
+                            "value":  100
+                        }
+                    ]
+    }
+]
