@@ -258,10 +258,18 @@ export async function createDrillingRecordAction(formData: FormData) {
       code,
       meters: rawHoleMeters[index] ?? ""
     }))
-    .filter((item) => item.code);
+    .filter((item) => item.code || item.meters);
+
+  const incomplete = pairs.find((item) => !item.code || !item.meters);
+  if (incomplete?.code && !incomplete.meters) {
+    redirect(`/perfuracao?erro=${encodeURIComponent(`Informe a metragem do furo ${incomplete.code}.`)}`);
+  }
+  if (incomplete?.meters && !incomplete.code) {
+    redirect("/perfuracao?erro=Informe%20o%20ID%20do%20furo%20que%20possui%20metragem%20preenchida.");
+  }
 
   if (pairs.length === 0) {
-    throw new Error("Adicione pelo menos um furo.");
+    redirect("/perfuracao?erro=Adicione%20pelo%20menos%20um%20furo%20com%20ID%20e%20metragem.");
   }
 
   const holes = pairs.map((item) => {

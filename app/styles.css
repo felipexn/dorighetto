@@ -214,6 +214,27 @@ button:disabled {
   flex-wrap: wrap;
 }
 
+.privacy-toggle {
+  min-width: 156px;
+}
+
+.private-value {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.hide-financial-values .private-value {
+  color: transparent;
+}
+
+.hide-financial-values .private-value::after {
+  content: attr(data-private-mask);
+  position: absolute;
+  inset: 0;
+  color: var(--ink);
+}
+
 .eyebrow {
   color: var(--brand-dark);
   font-size: 12px;
@@ -389,6 +410,15 @@ textarea:focus {
   padding: 10px 12px;
 }
 
+.inline-form-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--red-soft);
+  color: var(--red);
+  font-weight: 700;
+}
+
 .kpi-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -548,7 +578,7 @@ textarea:focus {
 
 .filters {
   display: grid;
-  grid-template-columns: 1fr 150px 150px 120px;
+  grid-template-columns: repeat(4, minmax(150px, 1fr)) 150px 150px 120px;
   align-items: end;
   gap: 14px;
 }
@@ -813,6 +843,61 @@ textarea:focus {
   margin-top: 12px;
 }
 
+.drill-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.chart-card {
+  display: grid;
+  gap: 14px;
+}
+
+.bar-list {
+  display: grid;
+  gap: 12px;
+}
+
+.bar-item {
+  display: grid;
+  gap: 7px;
+}
+
+.bar-item > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bar-item span,
+.muted-text {
+  color: var(--muted);
+}
+
+.bar-track {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+}
+
+.bar-track span {
+  display: block;
+  height: 100%;
+  min-width: 6px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand), var(--green));
+}
+
 .quick-team-list {
   margin-top: 12px;
   display: flex;
@@ -913,6 +998,7 @@ textarea:focus {
 
   .sheet-grid,
   .kpi-row,
+  .drill-kpi-grid,
   .summary-grid,
   .receipt-grid {
     grid-template-columns: 1fr 1fr;
@@ -938,6 +1024,8 @@ textarea:focus {
 
   .sheet-grid,
   .kpi-row,
+  .drill-kpi-grid,
+  .chart-grid,
   .entry-form,
   .sheet-settings-form,
   .daily-form,

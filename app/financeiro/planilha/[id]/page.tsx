@@ -3,6 +3,8 @@ import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import { notFound } from "next/navigation";
 import { EntryType } from "@prisma/client";
 import { AppShell } from "@/components/app-shell";
+import { FinancialPrivacyToggle } from "@/components/financial-privacy-toggle";
+import { PrivateValue } from "@/components/private-value";
 import { PageHeader } from "@/components/ui";
 import { createEntryAction, deleteEntryAction, deleteSheetAction, updateSheetAction } from "@/app/actions";
 import { prisma } from "@/lib/prisma";
@@ -41,13 +43,18 @@ export default async function PlanilhaPage({ params }: Props) {
         eyebrow="Planilha financeira"
         title={sheet.name}
         description={sheet.purpose ?? "Entradas e saidas desta finalidade."}
-        actions={<Link className="button secondary" href="/financeiro"><ArrowLeft size={18} /> Voltar</Link>}
+        actions={
+          <>
+            <FinancialPrivacyToggle />
+            <Link className="button secondary" href="/financeiro"><ArrowLeft size={18} /> Voltar</Link>
+          </>
+        }
       />
 
       <section className="kpi-row">
-        <div className="kpi"><span>Entradas</span><strong>{formatCurrency(entradas)}</strong></div>
-        <div className="kpi"><span>Saidas</span><strong>{formatCurrency(saidas)}</strong></div>
-        <div className="kpi"><span>Saldo da planilha</span><strong>{formatCurrency(entradas - saidas)}</strong></div>
+        <div className="kpi"><span>Entradas</span><strong><PrivateValue>{formatCurrency(entradas)}</PrivateValue></strong></div>
+        <div className="kpi"><span>Saidas</span><strong><PrivateValue>{formatCurrency(saidas)}</PrivateValue></strong></div>
+        <div className="kpi"><span>Saldo da planilha</span><strong><PrivateValue>{formatCurrency(entradas - saidas)}</PrivateValue></strong></div>
       </section>
 
       {isAdmin ? (
@@ -141,7 +148,7 @@ export default async function PlanilhaPage({ params }: Props) {
               <span>{entry.item}</span>
               <span>{entry.quantity ?? "-"}</span>
               <span className={entry.type === "ENTRADA" ? "tag income" : "tag expense"}>{entry.type}</span>
-              <strong>{formatCurrency(decimalToNumber(entry.value))}</strong>
+              <strong><PrivateValue>{formatCurrency(decimalToNumber(entry.value))}</PrivateValue></strong>
               {isAdmin ? (
                 <form action={deleteEntryAction}>
                   <input type="hidden" name="id" value={entry.id} />

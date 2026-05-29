@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useFormStatus } from "react-dom";
 
 type HoleInput = {
   key: string;
@@ -9,9 +10,13 @@ type HoleInput = {
 };
 
 export function PerfuracaoFormFields() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { pending } = useFormStatus();
   const [holes, setHoles] = useState<HoleInput[]>([
     { key: crypto.randomUUID(), code: "", meters: "" }
   ]);
+  const [error, setError] = useState("");
+  const wasPendingRef = useRef(false);
 
   function updateHole(key: string, field: "code" | "meters", value: string) {
     setHoles((current) => {
@@ -32,12 +37,66 @@ export function PerfuracaoFormFields() {
     setHoles((current) => (current.length > 1 ? current.filter((item) => item.key !== key) : current));
   }
 
+  function validateHoles(event: Event) {
+    setError("");
+
+    const incomplete = holes.find((hole) => {
+      const hasCode = Boolean(hole.code.trim());
+      const hasMeters = Boolean(hole.meters.trim());
+      return hasCode !== hasMeters;
+    });
+
+    if (incomplete?.code.trim() && !incomplete.meters.trim()) {
+      event.preventDefault();
+      setError(`Informe a metragem do furo ${incomplete.code.trim()}.`);
+      return;
+    }
+
+    if (incomplete?.meters.trim() && !incomplete.code.trim()) {
+      event.preventDefault();
+      setError("Informe o ID do furo que possui metragem preenchida.");
+      return;
+    }
+
+    const completeRows = holes.filter((hole) => hole.code.trim() && hole.meters.trim());
+    if (completeRows.length === 0) {
+      event.preventDefault();
+      setError("Adicione pelo menos um furo com ID e metragem.");
+    }
+  }
+
+  useEffect(() => {
+    const form = containerRef.current?.closest("form");
+    if (!form) return;
+
+    const handleSubmit = (event: Event) => {
+      validateHoles(event);
+    };
+
+    form.addEventListener("submit", handleSubmit);
+    return () => form.removeEventListener("submit", handleSubmit);
+  }, [holes]);
+
+  useEffect(() => {
+    if (pending) {
+      wasPendingRef.current = true;
+      return;
+    }
+
+    if (wasPendingRef.current) {
+      wasPendingRef.current = false;
+      setError("");
+      setHoles([{ key: crypto.randomUUID(), code: "", meters: "" }]);
+    }
+  }, [pending]);
+
   return (
-    <div className="holes-form">
+    <div className="holes-form" ref={containerRef}>
       <div className="holes-head">
         <strong>Furos do dia</strong>
         <button className="secondary compact" type="button" onClick={addHole}>+ Adicionar furo</button>
       </div>
+      {error ? <p className="inline-form-error">{error}</p> : null}
       {holes.map((hole, index) => (
         <div className="hole-row" key={hole.key}>
           <label>
@@ -47,7 +106,6 @@ export function PerfuracaoFormFields() {
               placeholder={`F${index + 1}`}
               value={hole.code}
               onChange={(event) => updateHole(hole.key, "code", event.target.value)}
-              required
             />
           </label>
           <label>
@@ -57,7 +115,6 @@ export function PerfuracaoFormFields() {
               placeholder="0,00"
               value={hole.meters}
               onChange={(event) => updateHole(hole.key, "meters", event.target.value)}
-              required
             />
           </label>
           <button className="icon-danger" type="button" onClick={() => removeHole(hole.key)} aria-label="Remover furo">

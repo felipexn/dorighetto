@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { FinancialPrivacyToggle } from "@/components/financial-privacy-toggle";
+import { PrivateValue } from "@/components/private-value";
 import { EmptyState, PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { decimalToNumber, formatCurrency } from "@/lib/format";
@@ -51,11 +53,14 @@ export default async function FinanceiroPage() {
         title="Planilhas de entrada e saida"
         description="Cada planilha e independente. Os valores nao sao somados entre finalidades diferentes."
         actions={
-          isAdmin ? (
-            <Link className="button" href="/financeiro/nova">
-              <Plus size={18} /> Nova planilha
-            </Link>
-          ) : null
+          <>
+            <FinancialPrivacyToggle />
+            {isAdmin ? (
+              <Link className="button" href="/financeiro/nova">
+                <Plus size={18} /> Nova planilha
+              </Link>
+            ) : null}
+          </>
         }
       />
 
@@ -73,9 +78,9 @@ export default async function FinanceiroPage() {
                 <h2>{sheet.name}</h2>
                 {sheet.purpose ? <p>{sheet.purpose}</p> : null}
                 <div className="sheet-metrics">
-                  <div><span>Entradas</span><strong>{formatCurrency(sheet.entradas)}</strong></div>
-                  <div><span>Saidas</span><strong>{formatCurrency(sheet.saidas)}</strong></div>
-                  <div><span>Saldo</span><strong>{formatCurrency(sheet.saldo)}</strong></div>
+                  <div><span>Entradas</span><strong><PrivateValue>{formatCurrency(sheet.entradas)}</PrivateValue></strong></div>
+                  <div><span>Saidas</span><strong><PrivateValue>{formatCurrency(sheet.saidas)}</PrivateValue></strong></div>
+                  <div><span>Saldo</span><strong><PrivateValue>{formatCurrency(sheet.saldo)}</PrivateValue></strong></div>
                 </div>
               </Link>
             </article>
