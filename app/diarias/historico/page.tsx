@@ -22,7 +22,7 @@ export default async function HistoricoDiariasPage() {
 
       <section className="panel table-panel">
         <div className="daily-table closures">
-          <div className="daily-row header"><span>Pagamento</span><span>Funcionario</span><span>Periodo</span><span>Dias</span><span>Total</span><span>Recibo</span></div>
+          <div className="daily-row header"><span>Pagamento</span><span>Funcionario</span><span>Periodo</span><span>Dias</span><span>Total</span><span>Recibo</span><span>PDF</span></div>
           {closures.map((closure) => (
             <div className="daily-row" key={closure.id}>
               <span>{formatDate(closure.paidAt)}</span>
@@ -31,6 +31,7 @@ export default async function HistoricoDiariasPage() {
               <span>{closure.daysWorked}</span>
               <strong>{formatCurrency(decimalToNumber(closure.totalPaid))}</strong>
               <Link className="button secondary compact" href={`/diarias/fechamento/${closure.id}`}><Download size={16} /> Abrir</Link>
+              <a className="button compact" href={`/api/diarias/fechamento/${closure.id}/pdf`}><Download size={16} /> Baixar</a>
             </div>
           ))}
         </div>

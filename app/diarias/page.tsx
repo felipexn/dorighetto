@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileClock, Pencil, Trash2, Eye } from "lucide-react";
+import { Download, FileClock, Pencil, Trash2, Eye } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/ui";
 import { createDailyEntryAction, deleteDailyEntryAction } from "@/app/actions";
@@ -97,7 +97,7 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
           <span>{entries.length} registros</span>
         </div>
         <div className="daily-table">
-          <div className="daily-row header"><span>Data</span><span>Funcionario</span><span>Funcao</span><span>Diaria</span><span>H.E.</span><span>Valor H.E.</span><span>Total</span><span>Status</span><span></span></div>
+          <div className="daily-row header"><span>Data</span><span>Funcionario</span><span>Funcao</span><span>Diaria</span><span>H.E.</span><span>Valor H.E.</span><span>Total</span><span>Status</span><span>Recibo</span></div>
           {entries.map((entry) => (
             <div className="daily-row" key={entry.id}>
               <span>{formatDate(entry.date)}</span>
@@ -116,6 +116,10 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
                     <button className="icon-danger" type="submit" aria-label="Deletar diaria"><Trash2 size={16} /></button>
                   </form>
                 </div>
+              ) : entry.status === "PAGO" && entry.closureId ? (
+                <Link className="button secondary compact" href={`/diarias/fechamento/${entry.closureId}`}>
+                  <Download size={16} /> Abrir
+                </Link>
               ) : <span />}
             </div>
           ))}

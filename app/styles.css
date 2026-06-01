@@ -593,7 +593,7 @@ textarea:focus {
 
 .daily-row {
   display: grid;
-  grid-template-columns: 110px 1.2fr 110px 120px 90px 120px 120px 110px 52px;
+  grid-template-columns: 110px 1.2fr 110px 120px 90px 120px 120px 110px 120px;
   align-items: center;
   gap: 12px;
   min-height: 48px;
@@ -618,7 +618,7 @@ textarea:focus {
 }
 
 .closures .daily-row {
-  grid-template-columns: 120px 1.2fr 1.2fr 80px 130px 120px;
+  grid-template-columns: 120px 1.2fr 1.2fr 80px 130px 120px 120px;
 }
 
 .receipt-lines .daily-row {
