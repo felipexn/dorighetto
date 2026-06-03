@@ -1,4 +1,4 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -40,8 +40,8 @@ export default async function PagamentoDiariaPage({ params }: Props) {
   return (
     <AppShell active="diarias" name={session.name} role={session.role}>
       <PageHeader
-        eyebrow="Previa"
-        title="Previa de pagamento"
+        eyebrow="Prévia"
+        title="Prévia de pagamento"
         description={`${employeeName} - ${formatDate(periodStart)} a ${formatDate(periodEnd)}`}
         actions={
           <>
@@ -54,30 +54,30 @@ export default async function PagamentoDiariaPage({ params }: Props) {
       <section className="pdf-preview-wrap">
         <div className="pdf-page">
           <header className="pdf-header">
-            <Image src="/logo-dorighetto.jpeg" alt="Dorighetto Perfuracao" width={86} height={86} />
+            <Image src="/logo-dorighetto.jpeg" alt="Dorighetto Perfuração" width={86} height={86} />
             <div>
-              <strong>DORIGHETTO PERFURACAO</strong>
-              <span>Previa de recibo de pagamento de diarias</span>
+              <strong>DORIGHETTO PERFURAÇÃO</strong>
+              <span>Prévia de recibo de pagamento de diárias</span>
             </div>
             <small>PENDENTE</small>
           </header>
 
           <div className="pdf-title">
             <h2>PREVIA DE PAGAMENTO</h2>
-            <p>Confira os dias, valores e total antes de confirmar. O status so muda para pago apos a confirmacao.</p>
+            <p>Confira os dias, valores e total antes de confirmar. O status so muda para pago apos a confirmação.</p>
           </div>
 
           <div className="pdf-info-grid">
-            <div><span>Funcionario</span><strong>{employeeName}</strong></div>
-            <div><span>Funcao</span><strong>{entries[0].role}</strong></div>
-            <div><span>Periodo</span><strong>{formatDate(periodStart)} a {formatDate(periodEnd)}</strong></div>
+            <div><span>Funcionário</span><strong>{employeeName}</strong></div>
+            <div><span>Função</span><strong>{entries[0].role}</strong></div>
+            <div><span>Período</span><strong>{formatDate(periodStart)} a {formatDate(periodEnd)}</strong></div>
             <div><span>Status</span><strong>PENDENTE</strong></div>
             <div><span>Dias trabalhados</span><strong>{entries.length}</strong></div>
             <div><span>Total a pagar</span><strong>{totalPaidFormatted}</strong></div>
           </div>
 
           <div className="pdf-table">
-            <div className="pdf-row header"><span>Data</span><span>Diaria</span><span>H. extra</span><span>Valor H.E.</span><span>Total H.E.</span><span>Total dia</span></div>
+            <div className="pdf-row header"><span>Data</span><span>Diária</span><span>H. extra</span><span>Valor H.E.</span><span>Total H.E.</span><span>Total dia</span></div>
             {entries.map((entry) => (
               <div className="pdf-row" key={entry.id}>
                 <span>{formatDate(entry.date)}</span>
@@ -91,13 +91,13 @@ export default async function PagamentoDiariaPage({ params }: Props) {
           </div>
 
           <div className="pdf-total-box">
-            <div><span>Total de diarias</span><strong>{formatCurrency(decimalToNumber(totalDaily))}</strong></div>
+            <div><span>Total de diárias</span><strong>{formatCurrency(decimalToNumber(totalDaily))}</strong></div>
             <div><span>Total horas extras</span><strong>{formatCurrency(decimalToNumber(totalOvertime))}</strong></div>
             <div className="grand-total"><span>Total geral a pagar</span><strong>{totalPaidFormatted}</strong></div>
           </div>
 
           <p className="pdf-declaration">
-            Esta previa ainda nao confirma pagamento. Apos conferir, use o botao de confirmacao para gerar o recibo e marcar as diarias como pagas.
+            Esta prévia ainda não confirma pagamento. Após conferir, use o botão de confirmação para gerar o recibo e marcar as diárias como pagas.
           </p>
 
           <div className="signature-grid">
@@ -106,11 +106,11 @@ export default async function PagamentoDiariaPage({ params }: Props) {
               <strong>________________________________________</strong>
             </div>
             <div>
-              <span>Assinatura do funcionario</span>
+              <span>Assinatura do funcionário</span>
               <strong>________________________________________</strong>
             </div>
             <div>
-              <span>Assinatura do responsavel</span>
+              <span>Assinatura do responsável</span>
               <strong>________________________________________</strong>
             </div>
           </div>
@@ -119,3 +119,8 @@ export default async function PagamentoDiariaPage({ params }: Props) {
     </AppShell>
   );
 }
+
+
+
+
+

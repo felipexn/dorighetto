@@ -1,4 +1,4 @@
-import path from "node:path";
+﻿import path from "node:path";
 import { NextResponse } from "next/server";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/format";
 
@@ -116,7 +116,7 @@ export async function GET(_: Request, { params }: Props) {
   });
 
   if (!closure) {
-    return new NextResponse("Fechamento nao encontrado.", { status: 404 });
+    return new NextResponse("Fechamento não encontrado.", { status: 404 });
   }
 
   const buffer = await new Promise<Buffer>((resolve) => {
@@ -251,3 +251,4 @@ export async function GET(_: Request, { params }: Props) {
     }
   });
 }
+

@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+﻿import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
 import type { UserRole } from "@prisma/client";
@@ -15,7 +15,7 @@ type SessionPayload = {
 function getSecret() {
   const secret = process.env.AUTH_SECRET;
   if (!secret) {
-    throw new Error("AUTH_SECRET nao configurado.");
+    throw new Error("AUTH_SECRET não configurado.");
   }
   return new TextEncoder().encode(secret);
 }
@@ -66,3 +66,4 @@ export async function requireAdmin() {
   if (session.role !== "ADMIN") redirect("/");
   return session;
 }
+

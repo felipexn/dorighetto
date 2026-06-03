@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import bcrypt from "bcryptjs";
 import { EntryType, Prisma } from "@prisma/client";
@@ -16,7 +16,7 @@ export async function loginAction(_: unknown, formData: FormData) {
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-    return { error: "Email ou senha invalidos." };
+    return { error: "Email ou senha inválidos." };
   }
 
   await createSession({
@@ -26,12 +26,12 @@ export async function loginAction(_: unknown, formData: FormData) {
     role: user.role
   });
 
-  redirect("/");
+  redirect("/financeiro");
 }
 
 export async function logoutAction() {
   await destroySession();
-  redirect("/login");
+  redirect("/");
 }
 
 export async function createSheetAction(formData: FormData) {
@@ -204,7 +204,7 @@ export async function payFortnightAction(formData: FormData) {
     });
 
     if (entries.length === 0) {
-      throw new Error("Nao existem diarias pendentes para este funcionario.");
+      throw new Error("Não existem diárias pendentes para este funcionário.");
     }
 
     const start = entries[0].date;
@@ -276,7 +276,7 @@ export async function createDrillingRecordAction(formData: FormData) {
     const metersRaw = item.meters || "0";
     const meters = parseDecimal(metersRaw);
     if (meters.lte(0)) {
-      throw new Error(`Metragem invalida para o furo ${item.code}.`);
+      throw new Error(`Metragem inválida para o furo ${item.code}.`);
     }
     return {
       holeCode: item.code.toUpperCase(),
@@ -303,7 +303,7 @@ export async function createDrillingRecordAction(formData: FormData) {
       }
     });
   } catch {
-    redirect("/perfuracao?erro=Nao%20foi%20possivel%20salvar.%20Sincronize%20o%20schema%20do%20banco%20e%20tente%20novamente.");
+    redirect("/perfuracao?erro=Não%20foi%20possível%20salvar.%20Sincronize%20o%20schema%20do%20banco%20e%20tente%20novamente.");
   }
 
   revalidatePath("/perfuracao");
@@ -316,3 +316,8 @@ export async function deleteDrillingRecordAction(formData: FormData) {
   await prisma.drillingRecord.delete({ where: { id } });
   revalidatePath("/perfuracao");
 }
+
+
+
+
+

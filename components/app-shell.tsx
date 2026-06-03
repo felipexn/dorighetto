@@ -1,4 +1,4 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 import Link from "next/link";
 import { CalendarDays, Drill, LogOut, Sheet, UserRound } from "lucide-react";
 import { logoutAction } from "@/app/actions";
@@ -17,10 +17,10 @@ export function AppShell({ active = "financeiro", role, name, children }: AppShe
     <main className="app-shell">
       <aside className="sidebar">
         <Link className="brand" href="/">
-          <Image src="/logo-dorighetto.jpeg" alt="Dorighetto Perfuracao" width={64} height={64} priority />
+          <Image src="/logo-dorighetto.jpeg" alt="Dorighetto Perfuração" width={64} height={64} priority />
           <div>
             <strong>Dorighetto</strong>
-            <span>Perfuracao</span>
+            <span>Perfuração</span>
           </div>
         </Link>
 
@@ -29,10 +29,10 @@ export function AppShell({ active = "financeiro", role, name, children }: AppShe
             <Sheet size={18} /> Financeiro
           </Link>
           <Link className={active === "diarias" ? "active" : ""} href="/diarias">
-            <CalendarDays size={18} /> Diarias
+            <CalendarDays size={18} /> Diárias
           </Link>
           <Link className={active === "perfuracao" ? "active" : ""} href="/perfuracao">
-            <Drill size={18} /> Perfuracao
+            <Drill size={18} /> Perfuração
           </Link>
         </nav>
 
@@ -52,3 +52,6 @@ export function AppShell({ active = "financeiro", role, name, children }: AppShe
     </main>
   );
 }
+
+
+

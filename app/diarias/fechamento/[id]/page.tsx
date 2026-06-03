@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { ArrowLeft, Download } from "lucide-react";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -39,30 +39,30 @@ export default async function FechamentoPage({ params }: Props) {
       <section className="pdf-preview-wrap">
         <div className="pdf-page">
           <header className="pdf-header">
-            <Image src="/logo-dorighetto.jpeg" alt="Dorighetto Perfuracao" width={86} height={86} />
+            <Image src="/logo-dorighetto.jpeg" alt="Dorighetto Perfuração" width={86} height={86} />
             <div>
-              <strong>DORIGHETTO PERFURACAO</strong>
-              <span>Recibo de pagamento de diarias</span>
+              <strong>DORIGHETTO PERFURAÇÃO</strong>
+              <span>Recibo de pagamento de diárias</span>
             </div>
             <small>{closure.receiptNumber}</small>
           </header>
 
           <div className="pdf-title">
             <h2>RECIBO DE PAGAMENTO</h2>
-            <p>Declaro que recebi da empresa Dorighetto Perfuracao o valor referente as diarias trabalhadas no periodo informado abaixo.</p>
+            <p>Declaro que recebi da empresa Dorighetto Perfuração o valor referente as diárias trabalhadas no período informado abaixo.</p>
           </div>
 
           <div className="pdf-info-grid">
-            <div><span>Funcionario</span><strong>{closure.employeeName}</strong></div>
-            <div><span>Funcao</span><strong>{closure.role}</strong></div>
-            <div><span>Periodo</span><strong>{formatDate(closure.periodStart)} a {formatDate(closure.periodEnd)}</strong></div>
+            <div><span>Funcionário</span><strong>{closure.employeeName}</strong></div>
+            <div><span>Função</span><strong>{closure.role}</strong></div>
+            <div><span>Período</span><strong>{formatDate(closure.periodStart)} a {formatDate(closure.periodEnd)}</strong></div>
             <div><span>Data do pagamento</span><strong>{formatDate(closure.paidAt)}</strong></div>
             <div><span>Dias trabalhados</span><strong>{closure.daysWorked}</strong></div>
             <div><span>Total recebido</span><strong>{formatCurrency(decimalToNumber(closure.totalPaid))}</strong></div>
           </div>
 
           <div className="pdf-table">
-            <div className="pdf-row header"><span>Data</span><span>Diaria</span><span>H. extra</span><span>Valor H.E.</span><span>Total H.E.</span><span>Total dia</span></div>
+            <div className="pdf-row header"><span>Data</span><span>Diária</span><span>H. extra</span><span>Valor H.E.</span><span>Total H.E.</span><span>Total dia</span></div>
             {closure.entries.map((entry) => (
               <div className="pdf-row" key={entry.id}>
                 <span>{formatDate(entry.date)}</span>
@@ -76,13 +76,13 @@ export default async function FechamentoPage({ params }: Props) {
           </div>
 
           <div className="pdf-total-box">
-            <div><span>Total de diarias</span><strong>{formatCurrency(decimalToNumber(closure.totalDaily))}</strong></div>
+            <div><span>Total de diárias</span><strong>{formatCurrency(decimalToNumber(closure.totalDaily))}</strong></div>
             <div><span>Total horas extras</span><strong>{formatCurrency(decimalToNumber(closure.totalOvertime))}</strong></div>
             <div className="grand-total"><span>Total geral recebido</span><strong>{formatCurrency(decimalToNumber(closure.totalPaid))}</strong></div>
           </div>
 
           <p className="pdf-declaration">
-            Eu, {closure.employeeName}, declaro para os devidos fins que recebi o valor total acima descrito, referente aos dias trabalhados no periodo informado.
+            Eu, {closure.employeeName}, declaro para os devidos fins que recebi o valor total acima descrito, referente aos dias trabalhados no período informado.
           </p>
 
           <div className="signature-grid">
@@ -91,11 +91,11 @@ export default async function FechamentoPage({ params }: Props) {
               <strong>________________________________________</strong>
             </div>
             <div>
-              <span>Assinatura do funcionario</span>
+              <span>Assinatura do funcionário</span>
               <strong>________________________________________</strong>
             </div>
             <div>
-              <span>Assinatura do responsavel</span>
+              <span>Assinatura do responsável</span>
               <strong>________________________________________</strong>
             </div>
           </div>
@@ -104,3 +104,7 @@ export default async function FechamentoPage({ params }: Props) {
     </AppShell>
   );
 }
+
+
+
+

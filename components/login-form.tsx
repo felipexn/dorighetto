@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState } from "react";
 import Image from "next/image";
@@ -10,10 +10,10 @@ export function LoginForm() {
 
   return (
     <form className="login-card" action={action}>
-      <Image src="/logo-dorighetto.jpeg" alt="Dorighetto Perfuracao" width={128} height={128} priority />
+      <Image src="/logo-dorighetto.jpeg" alt="Dorighetto Perfuração" width={128} height={128} priority />
       <div>
         <span className="eyebrow">Acesso restrito</span>
-        <h1>Dorighetto Perfuracao</h1>
+        <h1>Dorighetto Perfuração</h1>
         <p>Entre para acessar as planilhas financeiras.</p>
       </div>
 
@@ -35,3 +35,5 @@ export function LoginForm() {
     </form>
   );
 }
+
+

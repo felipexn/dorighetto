@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import "./styles.css";
 
 export const metadata: Metadata = {
-  title: "Dorighetto Perfuracao",
-  description: "Modulo financeiro de planilhas de entrada e saida."
+  title: "Dorighetto Perfuração",
+  description: "Perfuração, controle operacional e gestão interna para serviços em mineração."
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

@@ -1,4 +1,4 @@
-import { Trash2 } from "lucide-react";
+﻿import { Trash2 } from "lucide-react";
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/ui";
@@ -173,7 +173,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
           {items.map((item) => (
             <div className="bar-item" key={`${title}-${item.label}`}>
               <div>
-                <strong>{item.label || "Nao informado"}</strong>
+                <strong>{item.label || "Não informado"}</strong>
                 <span>{metersLabel(item.value)}</span>
               </div>
               <div className="bar-track"><span style={{ width: `${Math.max((item.value / chartMax) * 100, 4)}%` }} /></div>
@@ -187,9 +187,9 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
   return (
     <AppShell active="perfuracao" name={session.name} role={session.role}>
       <PageHeader
-        eyebrow="Perfuracao"
-        title="Ficha de perfuracao"
-        description="Registro diario por equipe com perfuratriz, banco, codigo da atividade, motor inicial/final e furos."
+        eyebrow="Perfuração"
+        title="Ficha de perfuração"
+        description="Registro diário por equipe com perfuratriz, banco, código da atividade, motor inicial/final e furos."
       />
       {actionError ? <section className="form-error">{actionError}</section> : null}
       {setupWarning ? <section className="form-error">{setupWarning}</section> : null}
@@ -205,10 +205,10 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
           </label>
           <label>Perfuratriz<input name="machineName" placeholder="Ex: PERF 080" defaultValue={params.prefillPerfuratriz ?? ""} required /></label>
           <label>Banco<input name="bankName" placeholder="Ex: BANCO CELESTE" defaultValue={params.prefillBanco ?? ""} required /></label>
-          <label>Codigo da atividade<input name="activityCode" placeholder="Ex: AT-234" defaultValue={params.prefillAtividade ?? ""} required /></label>
+          <label>Código da atividade<input name="activityCode" placeholder="Ex: AT-234" defaultValue={params.prefillAtividade ?? ""} required /></label>
           <label>H. motor inicial<input name="motorStart" placeholder="Ex: 1245" defaultValue={params.prefillMotorInicial ?? ""} required /></label>
           <label>H. motor final<input name="motorEnd" placeholder="Ex: 1276" defaultValue={params.prefillMotorFinal ?? ""} required /></label>
-          <label className="wide-field">Observacao<input name="notes" placeholder="Opcional" /></label>
+          <label className="wide-field">Observação<input name="notes" placeholder="Opcional" /></label>
           <PerfuracaoFormFields />
           <button type="submit">Salvar ficha do dia</button>
         </form>
@@ -218,7 +218,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
         <section className="panel section-gap">
           <div className="table-head">
             <h2>Continuar equipe existente</h2>
-            <span>Preenche os campos para lancar hoje</span>
+            <span>Preencha os campos para lançar hoje</span>
           </div>
           <div className="quick-team-list">
             {quickTeams.map((item) => (
@@ -260,24 +260,24 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
           </select>
         </label>
         <label>De<input name="inicio" type="date" defaultValue={params.inicio ?? ""} /></label>
-        <label>Ate<input name="fim" type="date" defaultValue={params.fim ?? ""} /></label>
+        <label>Até<input name="fim" type="date" defaultValue={params.fim ?? ""} /></label>
         <button type="submit">Filtrar</button>
       </form>
 
       <section className="drill-kpi-grid section-gap">
         <div className="kpi"><span>Total perfurado</span><strong>{metersLabel(totalMetros)}</strong></div>
-        <div className="kpi"><span>Media por dia</span><strong>{metersLabel(mediaDia)}</strong></div>
-        <div className="kpi"><span>Equipe lider</span><strong>{topTeam ? topTeam.label : "-"}</strong></div>
-        <div className="kpi"><span>Banco lider</span><strong>{topBank ? topBank.label : "-"}</strong></div>
+        <div className="kpi"><span>Média por dia</span><strong>{metersLabel(mediaDia)}</strong></div>
+        <div className="kpi"><span>Equipe líder</span><strong>{topTeam ? topTeam.label : "-"}</strong></div>
+        <div className="kpi"><span>Banco líder</span><strong>{topBank ? topBank.label : "-"}</strong></div>
         <div className="kpi"><span>Total de furos</span><strong>{totalFuros}</strong></div>
-        <div className="kpi"><span>Fichas lancadas</span><strong>{records.length}</strong></div>
+        <div className="kpi"><span>Fichas lançadas</span><strong>{records.length}</strong></div>
       </section>
 
       <section className="chart-grid section-gap">
         <BarList title="Metros por equipe" items={byTeam} />
         <BarList title="Metros por banco" items={byBank} />
         <BarList title="Metros por perfuratriz" items={byMachine} />
-        <BarList title="Evolucao diaria" items={byDate} />
+        <BarList title="Evolução diária" items={byDate} />
         <BarList title="Ranking de equipes" items={byTeam.slice(0, 5)} />
         <BarList title="Ranking de bancos" items={byBank.slice(0, 5)} />
         <BarList title="Metros por atividade" items={byActivity} />
@@ -285,7 +285,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
 
       <section className="panel section-gap">
         <div className="table-head">
-          <h2>Registros diarios</h2>
+          <h2>Registros diários</h2>
           <span>{records.length} fichas</span>
         </div>
         <div className="drill-list">
@@ -329,3 +329,8 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
     </AppShell>
   );
 }
+
+
+
+
+

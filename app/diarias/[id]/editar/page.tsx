@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { ArrowLeft, Save } from "lucide-react";
 import { notFound } from "next/navigation";
 import { updateDailyEntryAction } from "@/app/actions";
@@ -31,7 +31,7 @@ export default async function EditarDiariaPage({ params }: Props) {
   return (
     <AppShell active="diarias" name={session.name} role={session.role}>
       <PageHeader
-        eyebrow="Editar diaria"
+        eyebrow="Editar diária"
         title={entry.employeeName}
         description="Altere os dados deste lançamento individual. A hora extra continua sendo calculada como diária dividida por 8."
         actions={<Link className="button secondary" href="/diarias?funcionario=&funcao=&status=PENDENTE"><ArrowLeft size={18} /> Voltar</Link>}
@@ -81,3 +81,6 @@ export default async function EditarDiariaPage({ params }: Props) {
     </AppShell>
   );
 }
+
+
+

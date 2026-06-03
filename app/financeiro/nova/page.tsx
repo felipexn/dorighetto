@@ -1,4 +1,4 @@
-import { ArrowLeft, Plus } from "lucide-react";
+﻿import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { createSheetAction } from "@/app/actions";
 import { AppShell } from "@/components/app-shell";
@@ -28,7 +28,7 @@ export default async function NovaPlanilhaPage() {
         </label>
 
         <label>
-          Observacoes
+          Observações
           <textarea name="description" placeholder="Detalhes adicionais desta planilha" rows={5} />
         </label>
 
@@ -37,3 +37,6 @@ export default async function NovaPlanilhaPage() {
     </AppShell>
   );
 }
+
+
+

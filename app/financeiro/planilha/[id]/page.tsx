@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import { notFound } from "next/navigation";
 import { EntryType } from "@prisma/client";
@@ -32,7 +32,7 @@ export default async function PlanilhaPage({ params }: Props) {
   const entradas = sheet.entries
     .filter((entry) => entry.type === "ENTRADA")
     .reduce((total, entry) => total + decimalToNumber(entry.value), 0);
-  const saidas = sheet.entries
+  const saídas = sheet.entries
     .filter((entry) => entry.type === "SAIDA")
     .reduce((total, entry) => total + decimalToNumber(entry.value), 0);
   const isAdmin = session.role === "ADMIN";
@@ -42,7 +42,7 @@ export default async function PlanilhaPage({ params }: Props) {
       <PageHeader
         eyebrow="Planilha financeira"
         title={sheet.name}
-        description={sheet.purpose ?? "Entradas e saidas desta finalidade."}
+        description={sheet.purpose ?? "Entradas e saídas desta finalidade."}
         actions={
           <>
             <FinancialPrivacyToggle />
@@ -53,14 +53,14 @@ export default async function PlanilhaPage({ params }: Props) {
 
       <section className="kpi-row">
         <div className="kpi"><span>Entradas</span><strong><PrivateValue>{formatCurrency(entradas)}</PrivateValue></strong></div>
-        <div className="kpi"><span>Saidas</span><strong><PrivateValue>{formatCurrency(saidas)}</PrivateValue></strong></div>
-        <div className="kpi"><span>Saldo da planilha</span><strong><PrivateValue>{formatCurrency(entradas - saidas)}</PrivateValue></strong></div>
+        <div className="kpi"><span>Saídas</span><strong><PrivateValue>{formatCurrency(saídas)}</PrivateValue></strong></div>
+        <div className="kpi"><span>Saldo da planilha</span><strong><PrivateValue>{formatCurrency(entradas - saídas)}</PrivateValue></strong></div>
       </section>
 
       {isAdmin ? (
         <section className="panel sheet-settings">
           <div>
-            <span className="eyebrow">Configuracoes</span>
+            <span className="eyebrow">Configurações</span>
             <h2>Editar planilha</h2>
           </div>
 
@@ -75,7 +75,7 @@ export default async function PlanilhaPage({ params }: Props) {
               <input name="purpose" defaultValue={sheet.purpose ?? ""} />
             </label>
             <label className="wide-field">
-              Observacoes
+              Observações
               <input name="description" defaultValue={sheet.description ?? ""} />
             </label>
             <button type="submit"><Save size={18} /> Salvar</button>
@@ -98,18 +98,18 @@ export default async function PlanilhaPage({ params }: Props) {
           <label>
             Data
             <input name="date" type="date" />
-            <small>Se ficar vazio, sera usada a data atual.</small>
+            <small>Se ficar vazio, será usada a data atual.</small>
           </label>
           <label>
             Tipo
             <select name="type" defaultValue={EntryType.SAIDA}>
-              <option value={EntryType.SAIDA}>Saida</option>
+              <option value={EntryType.SAIDA}>Saída</option>
               <option value={EntryType.ENTRADA}>Entrada</option>
             </select>
           </label>
           <label>
             Item
-            <input name="item" placeholder="Descricao do item" required />
+            <input name="item" placeholder="Descrição do item" required />
           </label>
           <label>
             Qtd
@@ -120,7 +120,7 @@ export default async function PlanilhaPage({ params }: Props) {
             <input name="value" placeholder="0,00" required />
           </label>
           <label className="wide-field">
-            Observacoes
+            Observações
             <input name="notes" placeholder="Opcional" />
           </label>
           <button type="submit"><Plus size={18} /> Adicionar</button>
@@ -129,7 +129,7 @@ export default async function PlanilhaPage({ params }: Props) {
 
       <section className="panel table-panel">
         <div className="table-head">
-          <h2>Lancamentos</h2>
+          <h2>Lançamentos</h2>
           <span>{sheet.entries.length} registros</span>
         </div>
 
@@ -153,7 +153,7 @@ export default async function PlanilhaPage({ params }: Props) {
                 <form action={deleteEntryAction}>
                   <input type="hidden" name="id" value={entry.id} />
                   <input type="hidden" name="sheetId" value={sheet.id} />
-                  <button className="icon-danger" type="submit" aria-label="Deletar lancamento"><Trash2 size={16} /></button>
+                  <button className="icon-danger" type="submit" aria-label="Deletar lançamento"><Trash2 size={16} /></button>
                 </form>
               ) : <span />}
             </div>
@@ -163,3 +163,6 @@ export default async function PlanilhaPage({ params }: Props) {
     </AppShell>
   );
 }
+
+
+

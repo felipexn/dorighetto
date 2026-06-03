@@ -4,7 +4,7 @@ import { getSession } from "@/lib/session";
 
 export default async function LoginPage() {
   const session = await getSession();
-  if (session) redirect("/");
+  if (session) redirect("/financeiro");
 
   return (
     <main className="login-page">

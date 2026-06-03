@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+﻿import { Prisma } from "@prisma/client";
 
 export function parseDecimal(value: FormDataEntryValue | null, fallback = 0) {
   const raw = String(value ?? "").trim();
@@ -7,7 +7,7 @@ export function parseDecimal(value: FormDataEntryValue | null, fallback = 0) {
   const normalized = raw.replace("R$", "").replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
   const parsed = Number(normalized);
   if (!Number.isFinite(parsed) || parsed < 0) {
-    throw new Error("Valor invalido.");
+    throw new Error("Valor inválido.");
   }
 
   return new Prisma.Decimal(parsed.toFixed(2));
@@ -40,3 +40,4 @@ export function makeReceiptNumber() {
   const stamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
   return `REC-${stamp}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 }
+

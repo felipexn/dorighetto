@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { Download, FileClock, Pencil, Trash2, Eye } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/ui";
@@ -45,37 +45,37 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
   return (
     <AppShell active="diarias" name={session.name} role={session.role}>
       <PageHeader
-        eyebrow="Diarias"
-        title="Diarias pendentes"
-        description="Lance os dias trabalhados. Ao pagar um funcionario, o sistema gera o recibo individual e limpa os pendentes dele."
-        actions={<Link className="button secondary" href="/diarias/historico"><FileClock size={18} /> Historico</Link>}
+        eyebrow="Diárias"
+        title="Diárias pendentes"
+        description="Lance os dias trabalhados. Ao pagar um funcionário, o sistema gera o recibo individual e limpa os pendentes dele."
+        actions={<Link className="button secondary" href="/diarias/historico"><FileClock size={18} /> Histórico</Link>}
       />
 
       {isAdmin ? (
         <form className="panel daily-form" action={createDailyEntryAction}>
           <label>Data<input name="date" type="date" defaultValue={toDateInput(new Date())} required /></label>
-          <label>Funcionario
+          <label>Funcionário
             <input name="employeeName" list="employee-options" placeholder="Selecione ou digite novo nome" required />
             <datalist id="employee-options">
               {employees.map((employee) => <option key={employee.employeeName} value={employee.employeeName} />)}
             </datalist>
           </label>
-          <label>Funcao<select name="role" defaultValue="AJUDANTE"><option>AJUDANTE</option><option>OPERADOR</option></select></label>
-          <label>Diaria<input name="dailyValue" placeholder="0,00" required /></label>
+          <label>Função<select name="role" defaultValue="AJUDANTE"><option>AJUDANTE</option><option>OPERADOR</option></select></label>
+          <label>Diária<input name="dailyValue" placeholder="0,00" required /></label>
           <label>H. extra<input name="overtimeHours" placeholder="0" /></label>
-          <label className="wide-field">Observacao<input name="notes" placeholder="Opcional" /></label>
-          <button type="submit">Adicionar diaria</button>
+          <label className="wide-field">Observação<input name="notes" placeholder="Opcional" /></label>
+          <button type="submit">Adicionar diária</button>
         </form>
       ) : null}
 
       <form className="panel filters section-gap">
-        <label>Funcionario
+        <label>Funcionário
           <select name="funcionario" defaultValue={params.funcionario ?? ""}>
             <option value="">Todos</option>
             {employees.map((employee) => <option key={employee.employeeName}>{employee.employeeName}</option>)}
           </select>
         </label>
-        <label>Funcao
+        <label>Função
           <select name="funcao" defaultValue={params.funcao ?? ""}>
             <option value="">Todas</option>
             <option>AJUDANTE</option>
@@ -97,7 +97,7 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
           <span>{entries.length} registros</span>
         </div>
         <div className="daily-table">
-          <div className="daily-row header"><span>Data</span><span>Funcionario</span><span>Funcao</span><span>Diaria</span><span>H.E.</span><span>Valor H.E.</span><span>Total</span><span>Status</span><span>Recibo</span></div>
+          <div className="daily-row header"><span>Data</span><span>Funcionário</span><span>Função</span><span>Diária</span><span>H.E.</span><span>Valor H.E.</span><span>Total</span><span>Status</span><span>Recibo</span></div>
           {entries.map((entry) => (
             <div className="daily-row" key={entry.id}>
               <span>{formatDate(entry.date)}</span>
@@ -110,10 +110,10 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
               <span className={entry.status === "PAGO" ? "tag income" : "tag pending"}>{entry.status}</span>
               {isAdmin && entry.status === "PENDENTE" ? (
                 <div className="row-actions">
-                  <Link className="icon-button" href={`/diarias/${entry.id}/editar`} aria-label="Editar diaria"><Pencil size={16} /></Link>
+                  <Link className="icon-button" href={`/diarias/${entry.id}/editar`} aria-label="Editar diária"><Pencil size={16} /></Link>
                   <form action={deleteDailyEntryAction}>
                     <input type="hidden" name="id" value={entry.id} />
-                    <button className="icon-danger" type="submit" aria-label="Deletar diaria"><Trash2 size={16} /></button>
+                    <button className="icon-danger" type="submit" aria-label="Deletar diária"><Trash2 size={16} /></button>
                   </form>
                 </div>
               ) : entry.status === "PAGO" && entry.closureId ? (
@@ -129,7 +129,7 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
       <section className="panel section-gap">
         <div className="table-head">
           <h2>Resumo individual</h2>
-          <span>{pending.length} funcionarios</span>
+          <span>{pending.length} funcionários</span>
         </div>
         <div className="summary-grid">
           {pending.map((item) => (
@@ -137,7 +137,7 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
               <h3>{item.employeeName}</h3>
               <span>{item.role}</span>
               <div><small>Dias</small><strong>{item._count.id}</strong></div>
-              <div><small>Diarias</small><strong>{formatCurrency(decimalToNumber(item._sum.dailyValue ?? 0))}</strong></div>
+              <div><small>Diárias</small><strong>{formatCurrency(decimalToNumber(item._sum.dailyValue ?? 0))}</strong></div>
               <div><small>Horas extras</small><strong>{formatCurrency(decimalToNumber(item._sum.overtimeTotal ?? 0))}</strong></div>
               <div><small>Total</small><strong>{formatCurrency(decimalToNumber(item._sum.dayTotal ?? 0))}</strong></div>
               {isAdmin ? (
@@ -152,3 +152,8 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
     </AppShell>
   );
 }
+
+
+
+
+

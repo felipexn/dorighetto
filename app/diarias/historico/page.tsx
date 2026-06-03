@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { ArrowLeft, Download } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/ui";
@@ -15,14 +15,14 @@ export default async function HistoricoDiariasPage() {
   return (
     <AppShell active="diarias" name={session.name} role={session.role}>
       <PageHeader
-        eyebrow="Historico"
+        eyebrow="Histórico"
         title="Pagamentos realizados"
         actions={<Link className="button secondary" href="/diarias"><ArrowLeft size={18} /> Voltar</Link>}
       />
 
       <section className="panel table-panel">
         <div className="daily-table closures">
-          <div className="daily-row header"><span>Pagamento</span><span>Funcionario</span><span>Periodo</span><span>Dias</span><span>Total</span><span>Recibo</span><span>PDF</span></div>
+          <div className="daily-row header"><span>Pagamento</span><span>Funcionário</span><span>Período</span><span>Dias</span><span>Total</span><span>Recibo</span><span>PDF</span></div>
           {closures.map((closure) => (
             <div className="daily-row" key={closure.id}>
               <span>{formatDate(closure.paidAt)}</span>
@@ -39,3 +39,7 @@ export default async function HistoricoDiariasPage() {
     </AppShell>
   );
 }
+
+
+
+
