@@ -594,20 +594,22 @@ button:disabled {
 }
 
 .private-value {
-  position: relative;
   display: inline-block;
+  min-width: 90px;
+  text-align: right;
   white-space: nowrap;
 }
 
-.hide-financial-values .private-value {
-  color: transparent;
+.private-value-mask {
+  display: none;
 }
 
-.hide-financial-values .private-value::after {
-  content: attr(data-private-mask);
-  position: absolute;
-  inset: 0;
-  color: var(--ink);
+.hide-financial-values .private-value-real {
+  display: none;
+}
+
+.hide-financial-values .private-value-mask {
+  display: inline;
 }
 
 .eyebrow {
@@ -1000,6 +1002,86 @@ textarea:focus {
   grid-template-columns: 110px 130px 100px 120px 130px 130px;
 }
 
+.paid-daily-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.paid-daily-group {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  overflow: hidden;
+}
+
+.paid-daily-group > summary {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 0 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.paid-daily-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.paid-daily-group > summary div {
+  display: grid;
+  gap: 3px;
+}
+
+.paid-daily-group > summary span,
+.paid-daily-card header span,
+.paid-daily-meta {
+  color: var(--muted);
+}
+
+.paid-daily-group > summary svg {
+  color: var(--muted);
+  transition: transform 0.18s ease;
+}
+
+.paid-daily-group[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.paid-daily-list {
+  display: grid;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+
+.paid-daily-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.paid-daily-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.paid-daily-card header div {
+  display: grid;
+  gap: 3px;
+}
+
+.paid-daily-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+}
+
 .receipt {
   display: grid;
   gap: 16px;
@@ -1295,6 +1377,63 @@ textarea:focus {
   border-color: var(--brand);
 }
 
+.drill-date-list {
+  display: grid;
+  gap: 12px;
+}
+
+.drill-date-group {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  overflow: hidden;
+}
+
+.drill-date-group > summary,
+.drill-holes-toggle > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.drill-date-group > summary::-webkit-details-marker,
+.drill-holes-toggle > summary::-webkit-details-marker {
+  display: none;
+}
+
+.drill-date-group > summary {
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 0 16px;
+}
+
+.drill-date-group > summary div {
+  display: grid;
+  gap: 3px;
+}
+
+.drill-date-group > summary span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.drill-date-group > summary svg,
+.drill-holes-toggle > summary svg {
+  color: var(--muted);
+  transition: transform 0.18s ease;
+}
+
+.drill-date-group[open] > summary svg,
+.drill-holes-toggle[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.drill-date-group > .drill-list {
+  padding: 0 12px 12px;
+}
+
 .drill-card {
   display: grid;
   gap: 10px;
@@ -1328,10 +1467,34 @@ textarea:focus {
   font-size: 13px;
 }
 
+.drill-holes-toggle {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  overflow: hidden;
+}
+
+.drill-holes-toggle > summary {
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+.drill-holes-toggle > summary span {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.drill-holes-toggle > summary strong {
+  font-size: 13px;
+}
+
 .drill-holes {
   display: grid;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  border-top: 1px solid var(--line);
   overflow: hidden;
 }
 
@@ -1456,6 +1619,12 @@ textarea:focus {
     flex-direction: column;
   }
 
+  .actions,
+  .actions .button,
+  .actions button {
+    width: 100%;
+  }
+
   .sheet-grid,
   .kpi-row,
   .drill-kpi-grid,
@@ -1481,5 +1650,48 @@ textarea:focus {
   .delete-zone {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .table-panel {
+    overflow-x: auto;
+  }
+
+  .daily-table {
+    min-width: 760px;
+  }
+
+  .daily-row {
+    grid-template-columns: 92px 150px 90px 100px 70px 100px 100px 90px 100px;
+    gap: 8px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .daily-form label,
+  .filters label {
+    min-width: 0;
+  }
+
+  .paid-daily-group > summary {
+    align-items: flex-start;
+    min-height: auto;
+    padding: 14px;
+  }
+
+  .paid-daily-card header {
+    display: grid;
+  }
+
+  .paid-daily-card header > strong {
+    text-align: left;
+  }
+
+  .paid-daily-card .button {
+    width: 100%;
+  }
+
+  .paid-daily-meta {
+    display: grid;
+    gap: 6px;
   }
 }
