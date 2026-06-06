@@ -144,18 +144,18 @@ export default async function PlanilhaPage({ params }: Props) {
           </div>
           {sheet.entries.map((entry) => (
             <div className="finance-row" key={entry.id}>
-              <span>{formatDate(entry.date)}</span>
-              <span>{entry.item}</span>
-              <span>{entry.quantity ?? "-"}</span>
-              <span className={entry.type === "ENTRADA" ? "tag income" : "tag expense"}>{entry.type}</span>
-              <strong><PrivateValue>{formatCurrency(decimalToNumber(entry.value))}</PrivateValue></strong>
+              <span data-label="Data">{formatDate(entry.date)}</span>
+              <span data-label="Item">{entry.item}</span>
+              <span data-label="Qtd">{entry.quantity ?? "-"}</span>
+              <span data-label="Tipo" className={entry.type === "ENTRADA" ? "tag income" : "tag expense"}>{entry.type}</span>
+              <strong data-label="Valor"><PrivateValue>{formatCurrency(decimalToNumber(entry.value))}</PrivateValue></strong>
               {isAdmin ? (
-                <form action={deleteEntryAction}>
+                <form className="finance-row-action" action={deleteEntryAction}>
                   <input type="hidden" name="id" value={entry.id} />
                   <input type="hidden" name="sheetId" value={sheet.id} />
                   <button className="icon-danger" type="submit" aria-label="Deletar lançamento"><Trash2 size={16} /></button>
                 </form>
-              ) : <span />}
+              ) : <span className="finance-row-action" />}
             </div>
           ))}
         </div>
