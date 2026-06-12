@@ -1299,6 +1299,43 @@ textarea:focus {
   align-items: end;
 }
 
+.hole-code-control {
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.hole-code-control span {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 0 0 0 12px;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.hole-code-control input {
+  min-height: 40px;
+  border: 0;
+  border-radius: 0;
+  padding-left: 4px;
+}
+
+.hole-code-control:focus-within {
+  border-color: var(--brand);
+  outline: 3px solid rgba(211, 146, 36, 0.18);
+}
+
+.hole-code-control input:focus {
+  border-color: transparent;
+  outline: 0;
+}
+
 .drill-list {
   display: grid;
   gap: 12px;
@@ -2176,6 +2213,17 @@ textarea:focus {
   color: var(--muted);
 }
 
+.drill-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.drill-card-actions form {
+  margin: 0;
+}
+
 .drill-meta {
   display: flex;
   flex-wrap: wrap;
@@ -2233,6 +2281,10 @@ textarea:focus {
   color: var(--muted);
   font-size: 13px;
   font-weight: 800;
+}
+
+.drill-hole.empty {
+  color: var(--muted);
 }
 
 .compact {

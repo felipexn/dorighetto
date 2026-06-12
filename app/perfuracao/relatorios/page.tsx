@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 import { ensureDrillingSchema } from "@/lib/drilling-schema";
 import { decimalToNumber, formatDate } from "@/lib/format";
+import { normalizeDrillingBankName } from "@/lib/drilling";
 
 type SearchParams = Promise<{
   equipe?: string;
@@ -46,14 +47,32 @@ function recordMeters(record: DrillReportRecord) {
   return record.holes.reduce((acc, hole) => acc + decimalToNumber(hole.meters), 0);
 }
 
-function groupMetersByRecords(records: DrillReportRecord[], key: "teamName" | "bankName" | "machineName" | "activityCode") {
+function groupMetersByRecords(
+  records: DrillReportRecord[],
+  key: "teamName" | "bankName" | "machineName" | "activityCode"
+) {
   const map = new Map<string, number>();
   for (const record of records) {
-    map.set(record[key], (map.get(record[key]) ?? 0) + recordMeters(record));
+    const label = key === "bankName" ? normalizeDrillingBankName(record.bankName) : record[key];
+    map.set(label, (map.get(label) ?? 0) + recordMeters(record));
   }
   return Array.from(map.entries())
     .map(([label, value]) => ({ label, value }))
     .sort((a, b) => b.value - a.value);
+}
+
+function bankSortValue(value: string) {
+  return /^\d+$/.test(value) ? Number(value) : Number.POSITIVE_INFINITY;
+}
+
+function uniqueBankOptions(items: { bankName: string }[]) {
+  return Array.from(new Set(items.map((item) => normalizeDrillingBankName(item.bankName))))
+    .sort((a, b) => {
+      const numericA = bankSortValue(a);
+      const numericB = bankSortValue(b);
+      if (numericA !== numericB) return numericA - numericB;
+      return a.localeCompare(b, "pt-BR", { numeric: true });
+    });
 }
 
 function groupMetersByDate(records: DrillReportRecord[]) {
@@ -267,7 +286,6 @@ export default async function RelatoriosPerfuracaoPage({ searchParams }: { searc
     records = await prisma.drillingRecord.findMany({
       where: {
         teamName: params.equipe || undefined,
-        bankName: params.banco || undefined,
         machineName: params.perfuratriz || undefined,
         activityCode: params.atividade || undefined,
         date: startDate || endDate ? { gte: startDate, lte: endDate } : undefined
@@ -290,6 +308,12 @@ export default async function RelatoriosPerfuracaoPage({ searchParams }: { searc
     setupWarning = "Módulo criado. Falta apenas sincronizar o schema no banco para listar os relatórios.";
   }
 
+  const selectedBank = params.banco ? normalizeDrillingBankName(params.banco) : "";
+  if (selectedBank) {
+    records = records.filter((record) => normalizeDrillingBankName(record.bankName) === selectedBank);
+  }
+
+  const bancoOptions = uniqueBankOptions(bancos);
   const filteredSummary = summarizeRecords(records);
   const reportSummary = summarizeRecords(reportRecords);
   const reportPeriod = hasReportPeriod
@@ -358,9 +382,9 @@ export default async function RelatoriosPerfuracaoPage({ searchParams }: { searc
           </select>
         </label>
         <label>Banco
-          <select name="banco" defaultValue={params.banco ?? ""}>
+          <select name="banco" defaultValue={selectedBank}>
             <option value="">Todos</option>
-            {bancos.map((item) => <option key={item.bankName}>{item.bankName}</option>)}
+            {bancoOptions.map((bankName) => <option key={bankName}>{bankName}</option>)}
           </select>
         </label>
         <label>Perfuratriz

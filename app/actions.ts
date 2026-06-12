@@ -9,6 +9,57 @@ import { createSession, destroySession, requireAdmin } from "@/lib/session";
 import { parseMoney, requiredText } from "@/lib/finance";
 import { makeReceiptNumber, parseDecimal } from "@/lib/diarias";
 import { ensureDrillingSchema } from "@/lib/drilling-schema";
+import { normalizeDrillingBankName } from "@/lib/drilling";
+
+function drillingFormError(path: string, message: string): never {
+  redirect(`${path}?erro=${encodeURIComponent(message)}`);
+}
+
+function normalizeDrillingHoleCode(value: string) {
+  const digits = value.trim().replace(/^F/i, "").replace(/\D/g, "");
+  return digits ? `F${digits}` : "";
+}
+
+function readDrillingHoles(formData: FormData, errorPath: string, notes: string) {
+  const rawHoleCodes = formData.getAll("holeCode").map((value) => String(value).trim());
+  const rawHoleMeters = formData.getAll("holeMeters").map((value) => String(value).trim());
+  const pairs = rawHoleCodes
+    .map((code, index) => ({
+      code: normalizeDrillingHoleCode(code),
+      meters: rawHoleMeters[index] ?? ""
+    }))
+    .filter((item) => item.code || item.meters);
+
+  const incomplete = pairs.find((item) => !item.code || !item.meters);
+  if (incomplete?.code && !incomplete.meters) {
+    drillingFormError(errorPath, `Informe a metragem do furo ${incomplete.code}.`);
+  }
+  if (incomplete?.meters && !incomplete.code) {
+    drillingFormError(errorPath, "Informe o ID do furo que possui metragem preenchida.");
+  }
+
+  if (pairs.length === 0 && !notes) {
+    drillingFormError(errorPath, "Adicione pelo menos um furo com ID e metragem ou preencha a observação.");
+  }
+
+  return pairs.map((item) => {
+    let meters: Prisma.Decimal;
+    try {
+      meters = parseDecimal(item.meters);
+    } catch {
+      drillingFormError(errorPath, `Metragem inválida para o furo ${item.code}.`);
+    }
+
+    if (meters.lte(0)) {
+      drillingFormError(errorPath, `Metragem inválida para o furo ${item.code}.`);
+    }
+
+    return {
+      holeCode: item.code,
+      meters
+    };
+  });
+}
 
 export async function loginAction(_: unknown, formData: FormData) {
   const email = requiredText(formData, "email").toLowerCase();
@@ -251,40 +302,9 @@ export async function createDrillingRecordAction(formData: FormData) {
   await requireAdmin();
   await ensureDrillingSchema(prisma);
 
-  const rawHoleCodes = formData.getAll("holeCode").map((value) => String(value).trim());
-  const rawHoleMeters = formData.getAll("holeMeters").map((value) => String(value).trim());
-  const pairs = rawHoleCodes
-    .map((code, index) => ({
-      code,
-      meters: rawHoleMeters[index] ?? ""
-    }))
-    .filter((item) => item.code || item.meters);
-
-  const incomplete = pairs.find((item) => !item.code || !item.meters);
-  if (incomplete?.code && !incomplete.meters) {
-    redirect(`/perfuracao?erro=${encodeURIComponent(`Informe a metragem do furo ${incomplete.code}.`)}`);
-  }
-  if (incomplete?.meters && !incomplete.code) {
-    redirect("/perfuracao?erro=Informe%20o%20ID%20do%20furo%20que%20possui%20metragem%20preenchida.");
-  }
-
-  if (pairs.length === 0) {
-    redirect("/perfuracao?erro=Adicione%20pelo%20menos%20um%20furo%20com%20ID%20e%20metragem.");
-  }
-
-  const holes = pairs.map((item) => {
-    const metersRaw = item.meters || "0";
-    const meters = parseDecimal(metersRaw);
-    if (meters.lte(0)) {
-      throw new Error(`Metragem inválida para o furo ${item.code}.`);
-    }
-    return {
-      holeCode: item.code.toUpperCase(),
-      meters
-    };
-  });
-
   const date = String(formData.get("date") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
+  const holes = readDrillingHoles(formData, "/perfuracao", notes);
 
   try {
     await prisma.drillingRecord.create({
@@ -292,14 +312,12 @@ export async function createDrillingRecordAction(formData: FormData) {
         date: date ? new Date(`${date}T00:00:00.000Z`) : new Date(),
         teamName: requiredText(formData, "teamName").toUpperCase(),
         machineName: requiredText(formData, "machineName").toUpperCase(),
-        bankName: requiredText(formData, "bankName").toUpperCase(),
+        bankName: normalizeDrillingBankName(requiredText(formData, "bankName")),
         activityCode: requiredText(formData, "activityCode").toUpperCase(),
         motorStart: requiredText(formData, "motorStart"),
         motorEnd: requiredText(formData, "motorEnd"),
-        notes: String(formData.get("notes") ?? "").trim() || null,
-        holes: {
-          create: holes
-        }
+        notes: notes || null,
+        holes: holes.length > 0 ? { create: holes } : undefined
       }
     });
   } catch {
@@ -307,6 +325,52 @@ export async function createDrillingRecordAction(formData: FormData) {
   }
 
   revalidatePath("/perfuracao");
+}
+
+export async function updateDrillingRecordAction(formData: FormData) {
+  await requireAdmin();
+  await ensureDrillingSchema(prisma);
+
+  const id = requiredText(formData, "id");
+  const errorPath = `/perfuracao/${id}/editar`;
+  const date = String(formData.get("date") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
+  const holes = readDrillingHoles(formData, errorPath, notes);
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.drillingHole.deleteMany({ where: { recordId: id } });
+      await tx.drillingRecord.update({
+        where: { id },
+        data: {
+          date: date ? new Date(`${date}T00:00:00.000Z`) : new Date(),
+          teamName: requiredText(formData, "teamName").toUpperCase(),
+          machineName: requiredText(formData, "machineName").toUpperCase(),
+          bankName: normalizeDrillingBankName(requiredText(formData, "bankName")),
+          activityCode: requiredText(formData, "activityCode").toUpperCase(),
+          motorStart: requiredText(formData, "motorStart"),
+          motorEnd: requiredText(formData, "motorEnd"),
+          notes: notes || null
+        }
+      });
+
+      if (holes.length > 0) {
+        await tx.drillingHole.createMany({
+          data: holes.map((hole) => ({
+            recordId: id,
+            holeCode: hole.holeCode,
+            meters: hole.meters
+          }))
+        });
+      }
+    });
+  } catch {
+    drillingFormError(errorPath, "Não foi possível atualizar a ficha. Sincronize o schema do banco e tente novamente.");
+  }
+
+  revalidatePath("/perfuracao");
+  revalidatePath(errorPath);
+  redirect("/perfuracao");
 }
 
 export async function deleteDrillingRecordAction(formData: FormData) {

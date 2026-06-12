@@ -1,4 +1,4 @@
-﻿import { BarChart3, ChevronDown, Trash2 } from "lucide-react";
+﻿import { BarChart3, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/ui";
@@ -9,6 +9,7 @@ import { requireSession } from "@/lib/session";
 import { ensureDrillingSchema } from "@/lib/drilling-schema";
 import { decimalToNumber, formatDate } from "@/lib/format";
 import { toDateInput } from "@/lib/diarias";
+import { normalizeDrillingBankName } from "@/lib/drilling";
 
 type SearchParams = Promise<{
   equipe?: string;
@@ -140,7 +141,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
               <Link
                 key={item.teamName}
                 className="quick-team-chip"
-                href={`/perfuracao?prefillEquipe=${encodeURIComponent(item.teamName)}&prefillPerfuratriz=${encodeURIComponent(item.machineName)}&prefillBanco=${encodeURIComponent(item.bankName)}&prefillAtividade=${encodeURIComponent(item.activityCode)}&prefillMotorInicial=${encodeURIComponent(item.motorStart)}&prefillMotorFinal=${encodeURIComponent(item.motorEnd)}`}
+                href={`/perfuracao?prefillEquipe=${encodeURIComponent(item.teamName)}&prefillPerfuratriz=${encodeURIComponent(item.machineName)}&prefillBanco=${encodeURIComponent(normalizeDrillingBankName(item.bankName))}&prefillAtividade=${encodeURIComponent(item.activityCode)}&prefillMotorInicial=${encodeURIComponent(item.motorStart)}&prefillMotorFinal=${encodeURIComponent(item.motorEnd)}`}
               >
                 {item.teamName}
               </Link>
@@ -161,9 +162,9 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
           </label>
           <label>Perfuratriz<input name="machineName" placeholder="Ex: PERF 080" defaultValue={params.prefillPerfuratriz ?? ""} required /></label>
           <label>Banco<input name="bankName" placeholder="Ex: BANCO CELESTE" defaultValue={params.prefillBanco ?? ""} required /></label>
-          <label>Código da atividade<input name="activityCode" placeholder="Ex: AT-234" defaultValue={params.prefillAtividade ?? ""} required /></label>
           <label>H. motor inicial<input name="motorStart" placeholder="Ex: 1245" defaultValue={params.prefillMotorInicial ?? ""} required /></label>
           <label>H. motor final<input name="motorEnd" placeholder="Ex: 1276" defaultValue={params.prefillMotorFinal ?? ""} required /></label>
+          <label>Código da atividade<input name="activityCode" placeholder="Ex: AT-234" defaultValue={params.prefillAtividade ?? ""} required /></label>
           <label className="wide-field">Observação<input name="notes" placeholder="Opcional" /></label>
           <PerfuracaoFormFields />
           <button type="submit">Salvar ficha do dia</button>
@@ -199,7 +200,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
                         <strong>{metersLabel(total)}</strong>
                       </header>
                       <div className="drill-meta">
-                        <span>Banco: {record.bankName}</span>
+                        <span>Banco: {normalizeDrillingBankName(record.bankName)}</span>
                         <span>Atividade: {record.activityCode}</span>
                         <span>H. motor: {record.motorStart} - {record.motorEnd}</span>
                       </div>
@@ -212,21 +213,28 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
                         </summary>
                         <div className="drill-holes">
                           <div className="drill-hole header"><span>ID do furo</span><span>Metros</span></div>
-                          {record.holes.map((hole) => (
-                            <div className="drill-hole" key={hole.id}>
-                              <span>{hole.holeCode}</span>
-                              <strong>{decimalToNumber(hole.meters).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m</strong>
-                            </div>
-                          ))}
+                          {record.holes.length > 0 ? (
+                            record.holes.map((hole) => (
+                              <div className="drill-hole" key={hole.id}>
+                                <span>{hole.holeCode}</span>
+                                <strong>{decimalToNumber(hole.meters).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m</strong>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="drill-hole empty"><span>Sem furos preenchidos</span><strong>Observação</strong></div>
+                          )}
                         </div>
                       </details>
 
                       {record.notes ? <p>{record.notes}</p> : null}
                       {isAdmin ? (
-                        <form action={deleteDrillingRecordAction}>
-                          <input type="hidden" name="id" value={record.id} />
-                          <button className="danger-button inline-danger" type="submit"><Trash2 size={16} /> Deletar ficha</button>
-                        </form>
+                        <div className="drill-card-actions">
+                          <Link className="button secondary compact" href={`/perfuracao/${record.id}/editar`}><Pencil size={16} /> Editar</Link>
+                          <form action={deleteDrillingRecordAction}>
+                            <input type="hidden" name="id" value={record.id} />
+                            <button className="danger-button inline-danger" type="submit"><Trash2 size={16} /> Deletar ficha</button>
+                          </form>
+                        </div>
                       ) : null}
                     </article>
                   );
@@ -239,9 +247,6 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
     </AppShell>
   );
 }
-
-
-
 
 
 
