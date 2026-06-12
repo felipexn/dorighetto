@@ -160,16 +160,16 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
             <div className="daily-row header"><span>Data</span><span>Funcionário</span><span>Função</span><span>Diária</span><span>H.E.</span><span>Valor H.E.</span><span>Total</span><span>Status</span><span>Recibo</span></div>
             {entries.map((entry) => (
               <div className="daily-row" key={entry.id}>
-                <span>{formatDate(entry.date)}</span>
-                <span>{entry.employeeName}</span>
-                <span>{entry.role}</span>
-                <span>{formatCurrency(decimalToNumber(entry.dailyValue))}</span>
-                <span>{decimalToNumber(entry.overtimeHours)}h</span>
-                <span>{formatCurrency(decimalToNumber(entry.overtimeRate))}</span>
-                <strong>{formatCurrency(decimalToNumber(entry.dayTotal))}</strong>
-                <span className={entry.status === "PAGO" ? "tag income" : "tag pending"}>{entry.status}</span>
+                <span data-label="Data">{formatDate(entry.date)}</span>
+                <span data-label="Funcionário">{entry.employeeName}</span>
+                <span data-label="Função">{entry.role}</span>
+                <span data-label="Diária">{formatCurrency(decimalToNumber(entry.dailyValue))}</span>
+                <span data-label="H.E.">{decimalToNumber(entry.overtimeHours)}h</span>
+                <span data-label="Valor H.E.">{formatCurrency(decimalToNumber(entry.overtimeRate))}</span>
+                <strong data-label="Total">{formatCurrency(decimalToNumber(entry.dayTotal))}</strong>
+                <span data-label="Status" className={entry.status === "PAGO" ? "tag income" : "tag pending"}>{entry.status}</span>
                 {isAdmin && entry.status === "PENDENTE" ? (
-                  <div className="row-actions">
+                  <div className="row-actions" data-label="Ações">
                     <Link className="icon-button" href={`/diarias/${entry.id}/editar`} aria-label="Editar diária"><Pencil size={16} /></Link>
                     <form action={deleteDailyEntryAction}>
                       <input type="hidden" name="id" value={entry.id} />
@@ -177,10 +177,10 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
                     </form>
                   </div>
                 ) : entry.status === "PAGO" && entry.closureId ? (
-                  <Link className="button secondary compact" href={`/diarias/fechamento/${entry.closureId}`}>
+                  <Link className="button secondary compact" data-label="Recibo" href={`/diarias/fechamento/${entry.closureId}`}>
                     <Download size={16} /> Abrir
                   </Link>
-                ) : <span />}
+                ) : <span data-label="Recibo" />}
               </div>
             ))}
           </div>
