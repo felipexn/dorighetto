@@ -31,6 +31,9 @@ export default async function EditarPerfuracaoPage({ params, searchParams }: Pro
       include: {
         holes: {
           orderBy: { createdAt: "asc" }
+        },
+        downtimes: {
+          orderBy: { createdAt: "asc" }
         }
       }
     }),
@@ -46,6 +49,14 @@ export default async function EditarPerfuracaoPage({ params, searchParams }: Pro
   const initialHoles = record.holes.map((hole) => ({
     code: hole.holeCode,
     meters: decimalToNumber(hole.meters).toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })
+  }));
+
+  const initialDowntimes = record.downtimes.map((downtime) => ({
+    reason: downtime.reason,
+    hours: decimalToNumber(downtime.hours).toLocaleString("pt-BR", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     })
@@ -78,7 +89,7 @@ export default async function EditarPerfuracaoPage({ params, searchParams }: Pro
         <label>H. motor final<input name="motorEnd" placeholder="Ex: 1276" defaultValue={record.motorEnd} required /></label>
         <label>Código da atividade<input name="activityCode" placeholder="Ex: AT-234" defaultValue={record.activityCode} required /></label>
         <label className="wide-field">Observação<input name="notes" placeholder="Opcional" defaultValue={record.notes ?? ""} /></label>
-        <PerfuracaoFormFields initialHoles={initialHoles} />
+        <PerfuracaoFormFields initialHoles={initialHoles} initialDowntimes={initialDowntimes} />
         <button type="submit"><Save size={18} /> Salvar alterações</button>
       </form>
     </AppShell>

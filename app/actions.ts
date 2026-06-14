@@ -20,7 +20,47 @@ function normalizeDrillingHoleCode(value: string) {
   return digits ? `F${digits}` : "";
 }
 
-function readDrillingHoles(formData: FormData, errorPath: string, notes: string) {
+function readDrillingDowntimes(formData: FormData, errorPath: string) {
+  const rawHours = formData.getAll("downtimeHours").map((value) => String(value).trim());
+  const rawReasons = formData.getAll("downtimeReason").map((value) => String(value).trim());
+  const rawOtherReasons = formData.getAll("downtimeOtherReason").map((value) => String(value).trim());
+  const pairs = rawHours
+    .map((hours, index) => {
+      const selectedReason = rawReasons[index] ?? "";
+      const otherReason = rawOtherReasons[index] ?? "";
+      return {
+        hours,
+        reason: selectedReason === "Outro" ? otherReason : selectedReason,
+        selectedReason
+      };
+    })
+    .filter((item) => item.hours || item.reason || item.selectedReason);
+
+  const incomplete = pairs.find((item) => !item.hours || !item.reason);
+  if (incomplete) {
+    drillingFormError(errorPath, "Informe as horas e o motivo da parada.");
+  }
+
+  return pairs.map((item) => {
+    let hours: Prisma.Decimal;
+    try {
+      hours = parseDecimal(item.hours);
+    } catch {
+      drillingFormError(errorPath, `Horas inválidas para a parada ${item.reason}.`);
+    }
+
+    if (hours.lte(0)) {
+      drillingFormError(errorPath, `Horas inválidas para a parada ${item.reason}.`);
+    }
+
+    return {
+      reason: item.reason.trim(),
+      hours
+    };
+  });
+}
+
+function readDrillingHoles(formData: FormData, errorPath: string, notes: string, hasDowntime: boolean) {
   const rawHoleCodes = formData.getAll("holeCode").map((value) => String(value).trim());
   const rawHoleMeters = formData.getAll("holeMeters").map((value) => String(value).trim());
   const pairs = rawHoleCodes
@@ -38,8 +78,8 @@ function readDrillingHoles(formData: FormData, errorPath: string, notes: string)
     drillingFormError(errorPath, "Informe o ID do furo que possui metragem preenchida.");
   }
 
-  if (pairs.length === 0 && !notes) {
-    drillingFormError(errorPath, "Adicione pelo menos um furo com ID e metragem ou preencha a observação.");
+  if (pairs.length === 0 && !notes && !hasDowntime) {
+    drillingFormError(errorPath, "Adicione pelo menos um furo com ID e metragem, uma parada ou preencha a observação.");
   }
 
   return pairs.map((item) => {
@@ -304,7 +344,8 @@ export async function createDrillingRecordAction(formData: FormData) {
 
   const date = String(formData.get("date") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
-  const holes = readDrillingHoles(formData, "/perfuracao", notes);
+  const downtimes = readDrillingDowntimes(formData, "/perfuracao");
+  const holes = readDrillingHoles(formData, "/perfuracao", notes, downtimes.length > 0);
 
   try {
     await prisma.drillingRecord.create({
@@ -317,7 +358,8 @@ export async function createDrillingRecordAction(formData: FormData) {
         motorStart: requiredText(formData, "motorStart"),
         motorEnd: requiredText(formData, "motorEnd"),
         notes: notes || null,
-        holes: holes.length > 0 ? { create: holes } : undefined
+        holes: holes.length > 0 ? { create: holes } : undefined,
+        downtimes: downtimes.length > 0 ? { create: downtimes } : undefined
       }
     });
   } catch {
@@ -335,11 +377,13 @@ export async function updateDrillingRecordAction(formData: FormData) {
   const errorPath = `/perfuracao/${id}/editar`;
   const date = String(formData.get("date") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
-  const holes = readDrillingHoles(formData, errorPath, notes);
+  const downtimes = readDrillingDowntimes(formData, errorPath);
+  const holes = readDrillingHoles(formData, errorPath, notes, downtimes.length > 0);
 
   try {
     await prisma.$transaction(async (tx) => {
       await tx.drillingHole.deleteMany({ where: { recordId: id } });
+      await tx.drillingDowntime.deleteMany({ where: { recordId: id } });
       await tx.drillingRecord.update({
         where: { id },
         data: {
@@ -360,6 +404,16 @@ export async function updateDrillingRecordAction(formData: FormData) {
             recordId: id,
             holeCode: hole.holeCode,
             meters: hole.meters
+          }))
+        });
+      }
+
+      if (downtimes.length > 0) {
+        await tx.drillingDowntime.createMany({
+          data: downtimes.map((downtime) => ({
+            recordId: id,
+            reason: downtime.reason,
+            hours: downtime.hours
           }))
         });
       }

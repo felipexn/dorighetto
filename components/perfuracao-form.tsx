@@ -14,6 +14,20 @@ type InitialHoleInput = {
   meters: string;
 };
 
+type DowntimeInput = {
+  key: string;
+  hours: string;
+  reason: string;
+  otherReason: string;
+};
+
+type InitialDowntimeInput = {
+  hours: string;
+  reason: string;
+};
+
+const DOWNTIME_REASONS = ["Esperando topógrafo", "Esperando diesel", "Manutenção", "Outro"];
+
 function newHoleKey() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -23,6 +37,10 @@ function newHoleKey() {
 
 function blankHole(key = newHoleKey()): HoleInput {
   return { key, code: "", meters: "" };
+}
+
+function blankDowntime(key = newHoleKey()): DowntimeInput {
+  return { key, hours: "", reason: "", otherReason: "" };
 }
 
 function numericHoleCode(value: string) {
@@ -46,10 +64,29 @@ function buildInitialHoles(initialHoles: InitialHoleInput[] = []) {
   return rows;
 }
 
-export function PerfuracaoFormFields({ initialHoles = [] }: { initialHoles?: InitialHoleInput[] }) {
+function buildInitialDowntimes(initialDowntimes: InitialDowntimeInput[] = []) {
+  return initialDowntimes.map((downtime, index) => {
+    const fixedReason = DOWNTIME_REASONS.includes(downtime.reason) ? downtime.reason : "Outro";
+    return {
+      key: `initial-downtime-${index}`,
+      hours: downtime.hours,
+      reason: fixedReason,
+      otherReason: fixedReason === "Outro" ? downtime.reason : ""
+    };
+  });
+}
+
+export function PerfuracaoFormFields({
+  initialHoles = [],
+  initialDowntimes = []
+}: {
+  initialHoles?: InitialHoleInput[];
+  initialDowntimes?: InitialDowntimeInput[];
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { pending } = useFormStatus();
   const [holes, setHoles] = useState<HoleInput[]>(() => buildInitialHoles(initialHoles));
+  const [downtimes, setDowntimes] = useState<DowntimeInput[]>(() => buildInitialDowntimes(initialDowntimes));
   const [error, setError] = useState("");
   const wasPendingRef = useRef(false);
 
@@ -71,6 +108,24 @@ export function PerfuracaoFormFields({ initialHoles = [] }: { initialHoles?: Ini
 
   function removeHole(key: string) {
     setHoles((current) => (current.length > 1 ? current.filter((item) => item.key !== key) : current));
+  }
+
+  function updateDowntime(key: string, field: "hours" | "reason" | "otherReason", value: string) {
+    setDowntimes((current) => current.map((item) => {
+      if (item.key !== key) return item;
+      if (field === "reason" && value !== "Outro") {
+        return { ...item, reason: value, otherReason: "" };
+      }
+      return { ...item, [field]: value };
+    }));
+  }
+
+  function addDowntime() {
+    setDowntimes((current) => [...current, blankDowntime()]);
+  }
+
+  function removeDowntime(key: string) {
+    setDowntimes((current) => current.filter((item) => item.key !== key));
   }
 
   function focusHole(index: number, field: "code" | "meters") {
@@ -142,8 +197,26 @@ export function PerfuracaoFormFields({ initialHoles = [] }: { initialHoles?: Ini
 
     const completeRows = holes.filter((hole) => hole.code.trim() && hole.meters.trim());
     if (completeRows.length === 0 && !notes) {
+      const completeDowntimes = downtimes.filter((downtime) => {
+        const reason = downtime.reason === "Outro" ? downtime.otherReason.trim() : downtime.reason.trim();
+        return downtime.hours.trim() && reason;
+      });
+      if (completeDowntimes.length > 0) return;
+
       event.preventDefault();
-      setError("Adicione pelo menos um furo com ID e metragem ou preencha a observação.");
+      setError("Adicione pelo menos um furo, uma parada ou preencha a observação.");
+      return;
+    }
+
+    const incompleteDowntime = downtimes.find((downtime) => {
+      const reason = downtime.reason === "Outro" ? downtime.otherReason.trim() : downtime.reason.trim();
+      const touched = Boolean(downtime.hours.trim() || downtime.reason.trim() || downtime.otherReason.trim());
+      return touched && (!downtime.hours.trim() || !reason);
+    });
+
+    if (incompleteDowntime) {
+      event.preventDefault();
+      setError("Informe as horas e o motivo da parada.");
     }
   }
 
@@ -179,6 +252,7 @@ export function PerfuracaoFormFields({ initialHoles = [] }: { initialHoles?: Ini
       wasPendingRef.current = false;
       setError("");
       setHoles([blankHole("new-0")]);
+      setDowntimes([]);
     }
   }, [pending]);
 
@@ -226,6 +300,54 @@ export function PerfuracaoFormFields({ initialHoles = [] }: { initialHoles?: Ini
           </button>
         </div>
       ))}
+      <div className="downtime-section">
+        <div className="holes-head">
+          <strong>Horas paradas</strong>
+          <button className="secondary compact" type="button" onClick={addDowntime}>+ Adicionar parada</button>
+        </div>
+        {downtimes.length === 0 ? <p className="muted-text">Opcional. Use quando a equipe ficou parada por topografia, diesel, manutenção ou outro motivo.</p> : null}
+        {downtimes.map((downtime) => (
+          <div className="downtime-row" key={downtime.key}>
+            <label>
+              Horas
+              <input
+                name="downtimeHours"
+                inputMode="decimal"
+                placeholder="0,00"
+                value={downtime.hours}
+                onChange={(event) => updateDowntime(downtime.key, "hours", event.target.value)}
+              />
+            </label>
+            <label>
+              Motivo
+              <select
+                name="downtimeReason"
+                value={downtime.reason}
+                onChange={(event) => updateDowntime(downtime.key, "reason", event.target.value)}
+              >
+                <option value="">Selecione</option>
+                {DOWNTIME_REASONS.map((reason) => <option key={reason}>{reason}</option>)}
+              </select>
+            </label>
+            {downtime.reason === "Outro" ? (
+              <label>
+                Outro motivo
+                <input
+                  name="downtimeOtherReason"
+                  placeholder="Descreva o motivo"
+                  value={downtime.otherReason}
+                  onChange={(event) => updateDowntime(downtime.key, "otherReason", event.target.value)}
+                />
+              </label>
+            ) : (
+              <input type="hidden" name="downtimeOtherReason" value="" />
+            )}
+            <button className="icon-danger" type="button" tabIndex={-1} onClick={() => removeDowntime(downtime.key)} aria-label="Remover parada">
+              x
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

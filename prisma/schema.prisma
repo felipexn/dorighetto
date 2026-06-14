@@ -127,6 +127,7 @@ model DrillingRecord {
   updatedAt     DateTime    @updatedAt @map("updated_at")
 
   holes DrillingHole[]
+  downtimes DrillingDowntime[]
 
   @@index([date, teamName])
   @@map("drilling_records")
@@ -144,4 +145,18 @@ model DrillingHole {
 
   @@index([recordId])
   @@map("drilling_holes")
+}
+
+model DrillingDowntime {
+  id        String   @id @default(cuid())
+  recordId  String   @map("record_id")
+  reason    String
+  hours     Decimal  @db.Decimal(8, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  record DrillingRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  @@index([recordId])
+  @@map("drilling_downtimes")
 }

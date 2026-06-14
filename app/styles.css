@@ -1336,6 +1336,20 @@ textarea:focus {
   outline: 0;
 }
 
+.downtime-section {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.downtime-row {
+  display: grid;
+  grid-template-columns: 120px minmax(180px, 1fr) minmax(180px, 1fr) 40px;
+  gap: 10px;
+  align-items: end;
+}
+
 .drill-list {
   display: grid;
   gap: 12px;
@@ -1575,7 +1589,7 @@ textarea:focus {
 .line-chart-wrap svg {
   min-width: 680px;
   width: 100%;
-  min-height: 342px;
+  min-height: 390px;
 }
 
 .line-chart-wrap line {
@@ -1590,7 +1604,7 @@ textarea:focus {
 }
 
 .line-chart-wrap .line-date {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .line-area {
@@ -2224,6 +2238,30 @@ textarea:focus {
   margin: 0;
 }
 
+.drill-downtime-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #eadcc3;
+  border-radius: 10px;
+  background: #fff9ec;
+}
+
+.drill-downtime-list strong,
+.drill-downtime-list span {
+  font-size: 13px;
+}
+
+.drill-downtime-list span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  font-weight: 800;
+}
+
 .drill-meta {
   display: flex;
   flex-wrap: wrap;
@@ -2494,8 +2532,14 @@ textarea:focus {
     grid-column: 2;
   }
 
-  .hole-row {
+  .hole-row,
+  .downtime-row {
     grid-template-columns: 1fr;
+  }
+
+  .drill-downtime-list {
+    align-items: stretch;
+    display: grid;
   }
 
   .wide-field {

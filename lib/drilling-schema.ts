@@ -24,10 +24,20 @@ const statements = [
     created_at timestamp(3) not null default now(),
     updated_at timestamp(3) not null default now()
   )`,
+  `create table if not exists drilling_downtimes (
+    id text primary key,
+    record_id text not null references drilling_records(id) on delete cascade,
+    reason text not null,
+    hours numeric(8, 2) not null,
+    created_at timestamp(3) not null default now(),
+    updated_at timestamp(3) not null default now()
+  )`,
   `create index if not exists drilling_records_date_team_name_idx
     on drilling_records(date, team_name)`,
   `create index if not exists drilling_holes_record_id_idx
-    on drilling_holes(record_id)`
+    on drilling_holes(record_id)`,
+  `create index if not exists drilling_downtimes_record_id_idx
+    on drilling_downtimes(record_id)`
 ];
 
 export async function ensureDrillingSchema(prisma: PrismaClient) {

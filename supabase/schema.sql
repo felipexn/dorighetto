@@ -93,11 +93,23 @@ create table if not exists drilling_holes (
   updated_at timestamp(3) not null default now()
 );
 
+create table if not exists drilling_downtimes (
+  id text primary key,
+  record_id text not null references drilling_records(id) on delete cascade,
+  reason text not null,
+  hours numeric(8, 2) not null,
+  created_at timestamp(3) not null default now(),
+  updated_at timestamp(3) not null default now()
+);
+
 create index if not exists drilling_records_date_team_name_idx
   on drilling_records(date, team_name);
 
 create index if not exists drilling_holes_record_id_idx
   on drilling_holes(record_id);
+
+create index if not exists drilling_downtimes_record_id_idx
+  on drilling_downtimes(record_id);
 
 drop trigger if exists touch_drilling_records_updated_at on drilling_records;
 create trigger touch_drilling_records_updated_at
@@ -107,6 +119,11 @@ for each row execute function touch_updated_at();
 drop trigger if exists touch_drilling_holes_updated_at on drilling_holes;
 create trigger touch_drilling_holes_updated_at
 before update on drilling_holes
+for each row execute function touch_updated_at();
+
+drop trigger if exists touch_drilling_downtimes_updated_at on drilling_downtimes;
+create trigger touch_drilling_downtimes_updated_at
+before update on drilling_downtimes
 for each row execute function touch_updated_at();
 
 insert into users (name, email, password_hash, role)

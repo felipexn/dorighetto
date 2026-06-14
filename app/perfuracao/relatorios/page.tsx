@@ -130,19 +130,21 @@ function MetricCard({ icon, label, value }: { icon: ReactNode; label: string; va
 
 function EvolutionLineChart({ items }: { items: ChartItem[] }) {
   const width = 900;
-  const height = 300;
+  const height = 360;
   const padX = 58;
-  const padY = 36;
+  const padTop = 36;
+  const plotBottom = height - 100;
+  const labelY = height - 12;
   const max = Math.max(...items.map((item) => item.value), 1);
   const steps = [1, 0.75, 0.5, 0.25, 0];
   const points = items.map((item, index) => {
     const x = items.length === 1 ? padX : padX + (index / (items.length - 1)) * (width - padX * 2);
-    const y = padY + (1 - item.value / max) * (height - padY * 2);
+    const y = padTop + (1 - item.value / max) * (plotBottom - padTop);
     return { ...item, x, y };
   });
   const path = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
   const areaPath = points.length > 0
-    ? `${path} L ${points[points.length - 1].x.toFixed(1)} ${height - padY} L ${points[0].x.toFixed(1)} ${height - padY} Z`
+    ? `${path} L ${points[points.length - 1].x.toFixed(1)} ${plotBottom} L ${points[0].x.toFixed(1)} ${plotBottom} Z`
     : "";
 
   return (
@@ -156,7 +158,7 @@ function EvolutionLineChart({ items }: { items: ChartItem[] }) {
         <div className="line-chart-wrap">
           <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Evolução de metros perfurados">
             {steps.map((step) => {
-              const y = padY + (1 - step) * (height - padY * 2);
+              const y = padTop + (1 - step) * (plotBottom - padTop);
               return (
                 <g key={step}>
                   <line x1={padX} x2={width - padX} y1={y} y2={y} />
@@ -170,7 +172,16 @@ function EvolutionLineChart({ items }: { items: ChartItem[] }) {
               <circle key={point.label} cx={point.x} cy={point.y} r="7" />
             ))}
             {points.map((point, index) => (
-              <text className="line-date" key={`${point.label}-${index}`} x={point.x} y={height - 4} textAnchor={index === 0 ? "start" : index === points.length - 1 ? "end" : "middle"}>{point.label}</text>
+              <text
+                className="line-date"
+                key={`${point.label}-${index}`}
+                x={point.x}
+                y={labelY}
+                textAnchor="start"
+                transform={`rotate(-90 ${point.x} ${labelY})`}
+              >
+                {point.label}
+              </text>
             ))}
           </svg>
         </div>

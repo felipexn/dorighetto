@@ -45,6 +45,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
     motorEnd: string;
     notes: string | null;
     holes: { id: string; holeCode: string; meters: number | { toNumber: () => number } }[];
+    downtimes: { id: string; reason: string; hours: number | { toNumber: () => number } }[];
   }[] = [];
   let equipes: { teamName: string }[] = [];
   let quickTeams: {
@@ -63,6 +64,9 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
     records = await prisma.drillingRecord.findMany({
       include: {
         holes: {
+          orderBy: { createdAt: "asc" }
+        },
+        downtimes: {
           orderBy: { createdAt: "asc" }
         }
       },
@@ -100,6 +104,10 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
 
   function metersLabel(value: number) {
     return `${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m`;
+  }
+
+  function hoursLabel(value: number) {
+    return `${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} h`;
   }
 
   const recordsByDate = Array.from(records.reduce((map, record) => {
@@ -190,6 +198,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
               <div className="drill-list">
                 {group.records.map((record) => {
                   const total = record.holes.reduce((acc, hole) => acc + decimalToNumber(hole.meters), 0);
+                  const downtimeTotal = record.downtimes.reduce((acc, downtime) => acc + decimalToNumber(downtime.hours), 0);
                   return (
                     <article className="drill-card" key={record.id}>
                       <header>
@@ -226,6 +235,15 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
                         </div>
                       </details>
 
+                      {record.downtimes.length > 0 ? (
+                        <div className="drill-downtime-list">
+                          <strong>Horas paradas: {hoursLabel(downtimeTotal)}</strong>
+                          {record.downtimes.map((downtime) => (
+                            <span key={downtime.id}>{downtime.reason}: {hoursLabel(decimalToNumber(downtime.hours))}</span>
+                          ))}
+                        </div>
+                      ) : null}
+
                       {record.notes ? <p>{record.notes}</p> : null}
                       {isAdmin ? (
                         <div className="drill-card-actions">
@@ -247,7 +265,6 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
     </AppShell>
   );
 }
-
 
 
 
