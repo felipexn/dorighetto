@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
 import { toDateInput } from "@/lib/diarias";
 import { ensureDrillingSchema } from "@/lib/drilling-schema";
-import { normalizeDrillingBankName } from "@/lib/drilling";
+import { defaultDrillingMachineOptions, normalizeDrillingBankName, normalizeDrillingMachineName } from "@/lib/drilling";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -25,7 +25,7 @@ export default async function EditarPerfuracaoPage({ params, searchParams }: Pro
 
   await ensureDrillingSchema(prisma);
 
-  const [record, equipes] = await Promise.all([
+  const [record, equipes, machines] = await Promise.all([
     prisma.drillingRecord.findUnique({
       where: { id },
       include: {
@@ -41,10 +41,20 @@ export default async function EditarPerfuracaoPage({ params, searchParams }: Pro
       distinct: ["teamName"],
       select: { teamName: true },
       orderBy: { teamName: "asc" }
+    }),
+    prisma.drillingRecord.findMany({
+      distinct: ["machineName"],
+      select: { machineName: true },
+      orderBy: { machineName: "asc" }
     })
   ]);
 
   if (!record) notFound();
+  const machineOptions = Array.from(new Set([
+    ...defaultDrillingMachineOptions,
+    ...machines.map((item) => normalizeDrillingMachineName(item.machineName)).filter(Boolean),
+    normalizeDrillingMachineName(record.machineName)
+  ]));
 
   const initialHoles = record.holes.map((hole) => ({
     code: hole.holeCode,
@@ -83,7 +93,11 @@ export default async function EditarPerfuracaoPage({ params, searchParams }: Pro
             {equipes.map((item) => <option key={item.teamName} value={item.teamName} />)}
           </datalist>
         </label>
-        <label>Perfuratriz<input name="machineName" placeholder="Ex: PERF 080" defaultValue={record.machineName} required /></label>
+        <label>Perfuratriz
+          <select name="machineName" defaultValue={normalizeDrillingMachineName(record.machineName)} required>
+            {machineOptions.map((machine) => <option key={machine} value={machine}>{machine}</option>)}
+          </select>
+        </label>
         <label>Banco<input name="bankName" placeholder="Ex: BANCO CELESTE" defaultValue={normalizeDrillingBankName(record.bankName)} required /></label>
         <label>H. motor inicial<input name="motorStart" placeholder="Ex: 1245" defaultValue={record.motorStart} required /></label>
         <label>H. motor final<input name="motorEnd" placeholder="Ex: 1276" defaultValue={record.motorEnd} required /></label>

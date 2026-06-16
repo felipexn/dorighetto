@@ -9,7 +9,7 @@ import { createSession, destroySession, requireAdmin } from "@/lib/session";
 import { parseMoney, requiredText } from "@/lib/finance";
 import { makeReceiptNumber, parseDecimal } from "@/lib/diarias";
 import { ensureDrillingSchema } from "@/lib/drilling-schema";
-import { normalizeDrillingBankName } from "@/lib/drilling";
+import { normalizeDrillingBankName, normalizeDrillingMachineName } from "@/lib/drilling";
 
 function drillingFormError(path: string, message: string): never {
   redirect(`${path}?erro=${encodeURIComponent(message)}`);
@@ -352,7 +352,7 @@ export async function createDrillingRecordAction(formData: FormData) {
       data: {
         date: date ? new Date(`${date}T00:00:00.000Z`) : new Date(),
         teamName: requiredText(formData, "teamName").toUpperCase(),
-        machineName: requiredText(formData, "machineName").toUpperCase(),
+        machineName: normalizeDrillingMachineName(requiredText(formData, "machineName")),
         bankName: normalizeDrillingBankName(requiredText(formData, "bankName")),
         activityCode: requiredText(formData, "activityCode").toUpperCase(),
         motorStart: requiredText(formData, "motorStart"),
@@ -389,7 +389,7 @@ export async function updateDrillingRecordAction(formData: FormData) {
         data: {
           date: date ? new Date(`${date}T00:00:00.000Z`) : new Date(),
           teamName: requiredText(formData, "teamName").toUpperCase(),
-          machineName: requiredText(formData, "machineName").toUpperCase(),
+          machineName: normalizeDrillingMachineName(requiredText(formData, "machineName")),
           bankName: normalizeDrillingBankName(requiredText(formData, "bankName")),
           activityCode: requiredText(formData, "activityCode").toUpperCase(),
           motorStart: requiredText(formData, "motorStart"),

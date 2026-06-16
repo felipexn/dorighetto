@@ -1,4 +1,4 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 import Link from "next/link";
 import { Drill, Mail, MapPin, Mountain, Phone, ShieldCheck } from "lucide-react";
 
@@ -53,9 +53,9 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <div className="hero-visual" aria-label="Imagem ilustrativa de perfuratriz em operação">
+        <div className="hero-visual" aria-label="Imagem real de perfuratriz em operação">
           <div className="hero-sky" />
-          <Image src="/drill-rig-illustration.svg" alt="Perfuratriz ilustrativa" width={560} height={420} priority />
+          <Image className="hero-photo" src="/perfuratriz-campo.png" alt="Perfuratriz em operação de campo" width={900} height={680} priority />
           <div className="hero-card hero-card-top">
             <strong>Serviço em campo</strong>
             <span>perfuração mineral</span>

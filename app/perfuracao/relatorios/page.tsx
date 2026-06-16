@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 import { ensureDrillingSchema } from "@/lib/drilling-schema";
 import { decimalToNumber, formatDate } from "@/lib/format";
-import { normalizeDrillingBankName } from "@/lib/drilling";
+import { normalizeDrillingBankName, normalizeDrillingMachineName } from "@/lib/drilling";
 
 type SearchParams = Promise<{
   equipe?: string;
@@ -53,7 +53,11 @@ function groupMetersByRecords(
 ) {
   const map = new Map<string, number>();
   for (const record of records) {
-    const label = key === "bankName" ? normalizeDrillingBankName(record.bankName) : record[key];
+    const label = key === "bankName"
+      ? normalizeDrillingBankName(record.bankName)
+      : key === "machineName"
+        ? normalizeDrillingMachineName(record.machineName)
+        : record[key];
     map.set(label, (map.get(label) ?? 0) + recordMeters(record));
   }
   return Array.from(map.entries())
@@ -73,6 +77,12 @@ function uniqueBankOptions(items: { bankName: string }[]) {
       if (numericA !== numericB) return numericA - numericB;
       return a.localeCompare(b, "pt-BR", { numeric: true });
     });
+}
+
+function uniqueMachineOptions(items: { machineName: string }[]) {
+  return Array.from(new Set(items.map((item) => normalizeDrillingMachineName(item.machineName))))
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
 }
 
 function groupMetersByDate(records: DrillReportRecord[]) {
@@ -297,7 +307,6 @@ export default async function RelatoriosPerfuracaoPage({ searchParams }: { searc
     records = await prisma.drillingRecord.findMany({
       where: {
         teamName: params.equipe || undefined,
-        machineName: params.perfuratriz || undefined,
         activityCode: params.atividade || undefined,
         date: startDate || endDate ? { gte: startDate, lte: endDate } : undefined
       },
@@ -320,11 +329,16 @@ export default async function RelatoriosPerfuracaoPage({ searchParams }: { searc
   }
 
   const selectedBank = params.banco ? normalizeDrillingBankName(params.banco) : "";
+  const selectedMachine = params.perfuratriz ? normalizeDrillingMachineName(params.perfuratriz) : "";
   if (selectedBank) {
     records = records.filter((record) => normalizeDrillingBankName(record.bankName) === selectedBank);
   }
+  if (selectedMachine) {
+    records = records.filter((record) => normalizeDrillingMachineName(record.machineName) === selectedMachine);
+  }
 
   const bancoOptions = uniqueBankOptions(bancos);
+  const machineOptions = uniqueMachineOptions(perfuratrizes);
   const filteredSummary = summarizeRecords(records);
   const reportSummary = summarizeRecords(reportRecords);
   const reportPeriod = hasReportPeriod
@@ -399,9 +413,9 @@ export default async function RelatoriosPerfuracaoPage({ searchParams }: { searc
           </select>
         </label>
         <label>Perfuratriz
-          <select name="perfuratriz" defaultValue={params.perfuratriz ?? ""}>
+          <select name="perfuratriz" defaultValue={selectedMachine}>
             <option value="">Todas</option>
-            {perfuratrizes.map((item) => <option key={item.machineName}>{item.machineName}</option>)}
+            {machineOptions.map((machineName) => <option key={machineName}>{machineName}</option>)}
           </select>
         </label>
         <label>Atividade

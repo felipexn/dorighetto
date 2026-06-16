@@ -9,7 +9,7 @@ import { requireSession } from "@/lib/session";
 import { ensureDrillingSchema } from "@/lib/drilling-schema";
 import { decimalToNumber, formatDate } from "@/lib/format";
 import { toDateInput } from "@/lib/diarias";
-import { normalizeDrillingBankName } from "@/lib/drilling";
+import { defaultDrillingMachineOptions, normalizeDrillingBankName, normalizeDrillingMachineName } from "@/lib/drilling";
 
 type SearchParams = Promise<{
   equipe?: string;
@@ -127,6 +127,14 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
   }, new Map<string, { label: string; records: typeof records; totalMeters: number; totalHoles: number }>()).entries())
     .map(([dateKey, group]) => ({ dateKey, ...group }))
     .sort((a, b) => b.dateKey.localeCompare(a.dateKey));
+  const machineOptions = Array.from(new Set([
+    ...defaultDrillingMachineOptions,
+    ...records.map((record) => normalizeDrillingMachineName(record.machineName)).filter(Boolean),
+    ...(params.prefillPerfuratriz ? [normalizeDrillingMachineName(params.prefillPerfuratriz)] : [])
+  ]));
+  const selectedMachine = params.prefillPerfuratriz
+    ? normalizeDrillingMachineName(params.prefillPerfuratriz)
+    : defaultDrillingMachineOptions[0];
 
   return (
     <AppShell active="perfuracao" name={session.name} role={session.role}>
@@ -149,7 +157,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
               <Link
                 key={item.teamName}
                 className="quick-team-chip"
-                href={`/perfuracao?prefillEquipe=${encodeURIComponent(item.teamName)}&prefillPerfuratriz=${encodeURIComponent(item.machineName)}&prefillBanco=${encodeURIComponent(normalizeDrillingBankName(item.bankName))}&prefillAtividade=${encodeURIComponent(item.activityCode)}&prefillMotorInicial=${encodeURIComponent(item.motorStart)}&prefillMotorFinal=${encodeURIComponent(item.motorEnd)}`}
+                href={`/perfuracao?prefillEquipe=${encodeURIComponent(item.teamName)}&prefillPerfuratriz=${encodeURIComponent(normalizeDrillingMachineName(item.machineName))}&prefillBanco=${encodeURIComponent(normalizeDrillingBankName(item.bankName))}&prefillAtividade=${encodeURIComponent(item.activityCode)}&prefillMotorInicial=${encodeURIComponent(item.motorStart)}&prefillMotorFinal=${encodeURIComponent(item.motorEnd)}`}
               >
                 {item.teamName}
               </Link>
@@ -168,7 +176,11 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
               {equipes.map((item) => <option key={item.teamName} value={item.teamName} />)}
             </datalist>
           </label>
-          <label>Perfuratriz<input name="machineName" placeholder="Ex: PERF 080" defaultValue={params.prefillPerfuratriz ?? ""} required /></label>
+          <label>Perfuratriz
+            <select name="machineName" defaultValue={selectedMachine} required>
+              {machineOptions.map((machine) => <option key={machine} value={machine}>{machine}</option>)}
+            </select>
+          </label>
           <label>Banco<input name="bankName" placeholder="Ex: BANCO CELESTE" defaultValue={params.prefillBanco ?? ""} required /></label>
           <label>H. motor inicial<input name="motorStart" placeholder="Ex: 1245" defaultValue={params.prefillMotorInicial ?? ""} required /></label>
           <label>H. motor final<input name="motorEnd" placeholder="Ex: 1276" defaultValue={params.prefillMotorFinal ?? ""} required /></label>
@@ -204,7 +216,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
                       <header>
                         <div>
                           <strong>{record.teamName}</strong>
-                          <span>{record.machineName}</span>
+                          <span>{normalizeDrillingMachineName(record.machineName)}</span>
                         </div>
                         <strong>{metersLabel(total)}</strong>
                       </header>
@@ -265,9 +277,6 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
     </AppShell>
   );
 }
-
-
-
 
 
 
