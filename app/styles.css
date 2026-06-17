@@ -979,7 +979,7 @@ textarea:focus {
 
 .filters {
   display: grid;
-  grid-template-columns: repeat(4, minmax(150px, 1fr)) 150px 150px 120px;
+  grid-template-columns: repeat(5, minmax(130px, 1fr)) 150px 150px 120px;
   align-items: end;
   gap: 14px;
 }
@@ -1136,6 +1136,53 @@ textarea:focus {
   font-size: 13px;
 }
 
+.advance-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.advance-panel h2 {
+  margin: 4px 0 6px;
+}
+
+.advance-panel p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.advance-form {
+  display: grid;
+  grid-template-columns: 180px minmax(240px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.advance-list {
+  display: grid;
+  gap: 10px;
+}
+
+.advance-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.advance-item div {
+  display: grid;
+  gap: 3px;
+}
+
+.advance-item span,
+.advance-item small {
+  color: var(--muted);
+}
+
 .pdf-preview-wrap {
   display: flex;
   justify-content: center;
@@ -1270,6 +1317,30 @@ textarea:focus {
   font-size: 16px;
 }
 
+.pdf-advance-box {
+  display: grid;
+  gap: 0;
+  margin-top: 18px;
+  border: 1px solid #d7d0c1;
+}
+
+.pdf-advance-box > strong {
+  padding: 10px 12px;
+  background: #f4f0e8;
+}
+
+.pdf-advance-box div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 9px 12px;
+  border-top: 1px solid #e7e1d7;
+}
+
+.pdf-advance-box span {
+  color: #666257;
+}
+
 .pdf-declaration {
   margin: 34px 0;
   line-height: 1.6;
@@ -1289,7 +1360,7 @@ textarea:focus {
 
 .perf-form {
   display: grid;
-  grid-template-columns: 140px 1fr 1fr 1fr 180px 150px 150px;
+  grid-template-columns: 140px minmax(150px, 1fr) minmax(130px, 1fr) minmax(120px, 1fr) 120px 150px 150px minmax(150px, 1fr);
   gap: 14px;
   align-items: end;
 }
@@ -1403,7 +1474,7 @@ textarea:focus {
 
 .report-period-form {
   display: grid;
-  grid-template-columns: 160px 160px auto;
+  grid-template-columns: 160px 160px 140px auto;
   gap: 12px;
   align-items: end;
 }
@@ -2395,6 +2466,7 @@ textarea:focus {
   .analytics-dashboard-grid,
   .report-generator,
   .report-period-form,
+  .advance-form,
   .report-summary-grid,
   .report-details-grid,
   .filters {
@@ -2563,6 +2635,15 @@ textarea:focus {
 
   .wide-field {
     grid-column: auto;
+  }
+
+  .advance-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .advance-item .icon-danger {
+    width: 100%;
   }
 
   .delete-zone {

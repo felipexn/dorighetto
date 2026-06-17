@@ -9,7 +9,14 @@ import { requireSession } from "@/lib/session";
 import { ensureDrillingSchema } from "@/lib/drilling-schema";
 import { decimalToNumber, formatDate } from "@/lib/format";
 import { toDateInput } from "@/lib/diarias";
-import { defaultDrillingMachineOptions, normalizeDrillingBankName, normalizeDrillingMachineName } from "@/lib/drilling";
+import {
+  defaultDrillingMachineOptions,
+  drillingShiftOptions,
+  formatDrillingShift,
+  normalizeDrillingBankName,
+  normalizeDrillingMachineName,
+  normalizeDrillingShift
+} from "@/lib/drilling";
 
 type SearchParams = Promise<{
   equipe?: string;
@@ -23,6 +30,7 @@ type SearchParams = Promise<{
   prefillPerfuratriz?: string;
   prefillBanco?: string;
   prefillAtividade?: string;
+  prefillTurno?: string;
   prefillMotorInicial?: string;
   prefillMotorFinal?: string;
 }>;
@@ -41,6 +49,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
     machineName: string;
     bankName: string;
     activityCode: string;
+    shift: string;
     motorStart: string;
     motorEnd: string;
     notes: string | null;
@@ -53,6 +62,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
     machineName: string;
     bankName: string;
     activityCode: string;
+    shift: string;
     motorStart: string;
     motorEnd: string;
   }[] = [];
@@ -85,6 +95,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
         machineName: true,
         bankName: true,
         activityCode: true,
+        shift: true,
         motorStart: true,
         motorEnd: true
       },
@@ -135,6 +146,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
   const selectedMachine = params.prefillPerfuratriz
     ? normalizeDrillingMachineName(params.prefillPerfuratriz)
     : defaultDrillingMachineOptions[0];
+  const selectedShift = normalizeDrillingShift(params.prefillTurno ?? "DIA");
 
   return (
     <AppShell active="perfuracao" name={session.name} role={session.role}>
@@ -157,7 +169,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
               <Link
                 key={item.teamName}
                 className="quick-team-chip"
-                href={`/perfuracao?prefillEquipe=${encodeURIComponent(item.teamName)}&prefillPerfuratriz=${encodeURIComponent(normalizeDrillingMachineName(item.machineName))}&prefillBanco=${encodeURIComponent(normalizeDrillingBankName(item.bankName))}&prefillAtividade=${encodeURIComponent(item.activityCode)}&prefillMotorInicial=${encodeURIComponent(item.motorStart)}&prefillMotorFinal=${encodeURIComponent(item.motorEnd)}`}
+                href={`/perfuracao?prefillEquipe=${encodeURIComponent(item.teamName)}&prefillPerfuratriz=${encodeURIComponent(normalizeDrillingMachineName(item.machineName))}&prefillBanco=${encodeURIComponent(normalizeDrillingBankName(item.bankName))}&prefillAtividade=${encodeURIComponent(item.activityCode)}&prefillTurno=${encodeURIComponent(normalizeDrillingShift(item.shift))}&prefillMotorInicial=${encodeURIComponent(item.motorStart)}&prefillMotorFinal=${encodeURIComponent(item.motorEnd)}`}
               >
                 {item.teamName}
               </Link>
@@ -177,11 +189,17 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
             </datalist>
           </label>
           <label>Perfuratriz
-            <select name="machineName" defaultValue={selectedMachine} required>
-              {machineOptions.map((machine) => <option key={machine} value={machine}>{machine}</option>)}
-            </select>
+            <input name="machineName" list="machine-options" placeholder="Ex: 80" defaultValue={selectedMachine} required />
+            <datalist id="machine-options">
+              {machineOptions.map((machine) => <option key={machine} value={machine} />)}
+            </datalist>
           </label>
           <label>Banco<input name="bankName" placeholder="Ex: BANCO CELESTE" defaultValue={params.prefillBanco ?? ""} required /></label>
+          <label>Turno
+            <select name="shift" defaultValue={selectedShift} required>
+              {drillingShiftOptions.map((shift) => <option key={shift.value} value={shift.value}>{shift.label}</option>)}
+            </select>
+          </label>
           <label>H. motor inicial<input name="motorStart" placeholder="Ex: 1245" defaultValue={params.prefillMotorInicial ?? ""} required /></label>
           <label>H. motor final<input name="motorEnd" placeholder="Ex: 1276" defaultValue={params.prefillMotorFinal ?? ""} required /></label>
           <label>Código da atividade<input name="activityCode" placeholder="Ex: AT-234" defaultValue={params.prefillAtividade ?? ""} required /></label>
@@ -222,6 +240,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
                       </header>
                       <div className="drill-meta">
                         <span>Banco: {normalizeDrillingBankName(record.bankName)}</span>
+                        <span>Turno: {formatDrillingShift(record.shift)}</span>
                         <span>Atividade: {record.activityCode}</span>
                         <span>H. motor: {record.motorStart} - {record.motorEnd}</span>
                       </div>
@@ -277,6 +296,4 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
     </AppShell>
   );
 }
-
-
 

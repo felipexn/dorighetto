@@ -27,6 +27,11 @@ enum PaymentStatus {
   PAGO
 }
 
+enum AdvanceStatus {
+  PENDENTE
+  DESCONTADO
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -103,14 +108,33 @@ model PayrollClosure {
   daysWorked    Int      @map("days_worked")
   totalDaily    Decimal  @map("total_daily") @db.Decimal(14, 2)
   totalOvertime Decimal  @map("total_overtime") @db.Decimal(14, 2)
+  totalAdvance  Decimal  @default(0) @map("total_advance") @db.Decimal(14, 2)
   totalPaid     Decimal  @map("total_paid") @db.Decimal(14, 2)
   receiptNumber String   @unique @map("receipt_number")
   createdAt     DateTime @default(now()) @map("created_at")
 
   entries DailyEntry[]
+  advances PayrollAdvance[]
 
   @@index([employeeName, periodStart, periodEnd])
   @@map("payroll_closures")
+}
+
+model PayrollAdvance {
+  id           String        @id @default(cuid())
+  employeeName String        @map("employee_name")
+  amount       Decimal       @db.Decimal(14, 2)
+  notes        String
+  status       AdvanceStatus @default(PENDENTE)
+  closureId    String?       @map("closure_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  closure PayrollClosure? @relation(fields: [closureId], references: [id], onDelete: SetNull)
+
+  @@index([employeeName, status])
+  @@index([closureId])
+  @@map("payroll_advances")
 }
 
 model DrillingRecord {
@@ -120,6 +144,7 @@ model DrillingRecord {
   machineName   String      @map("machine_name")
   bankName      String      @map("bank_name")
   activityCode  String      @map("activity_code")
+  shift         String      @default("DIA")
   motorStart    String      @map("motor_start")
   motorEnd      String      @map("motor_end")
   notes         String?

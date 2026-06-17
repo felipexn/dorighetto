@@ -8,13 +8,14 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 import { ensureDrillingSchema } from "@/lib/drilling-schema";
 import { decimalToNumber, formatDate } from "@/lib/format";
-import { normalizeDrillingBankName, normalizeDrillingMachineName } from "@/lib/drilling";
+import { drillingShiftOptions, formatDrillingShift, normalizeDrillingBankName, normalizeDrillingMachineName, normalizeDrillingShift } from "@/lib/drilling";
 
 type SearchParams = Promise<{
   equipe?: string;
   banco?: string;
   perfuratriz?: string;
   atividade?: string;
+  turno?: string;
   inicio?: string;
   fim?: string;
 }>;
@@ -26,6 +27,7 @@ type DrillReportRecord = {
   machineName: string;
   bankName: string;
   activityCode: string;
+  shift: string;
   holes: { meters: number | { toNumber: () => number } }[];
 };
 type ChartStyle = CSSProperties & {
@@ -291,6 +293,7 @@ export default async function RelatoriosPerfuracaoPage({ searchParams }: { searc
   const params = await searchParams;
   const startDate = params.inicio ? new Date(`${params.inicio}T00:00:00.000Z`) : undefined;
   const endDate = params.fim ? new Date(`${params.fim}T23:59:59.999Z`) : undefined;
+  const selectedShift = params.turno ? normalizeDrillingShift(params.turno) : "";
   const hasReportPeriod = Boolean(params.inicio || params.fim);
 
   let records: DrillReportRecord[] = [];
@@ -308,6 +311,7 @@ export default async function RelatoriosPerfuracaoPage({ searchParams }: { searc
       where: {
         teamName: params.equipe || undefined,
         activityCode: params.atividade || undefined,
+        shift: selectedShift || undefined,
         date: startDate || endDate ? { gte: startDate, lte: endDate } : undefined
       },
       include: { holes: { orderBy: { createdAt: "asc" } } },
@@ -315,7 +319,10 @@ export default async function RelatoriosPerfuracaoPage({ searchParams }: { searc
     });
 
     reportRecords = await prisma.drillingRecord.findMany({
-      where: { date: startDate || endDate ? { gte: startDate, lte: endDate } : undefined },
+      where: {
+        shift: selectedShift || undefined,
+        date: startDate || endDate ? { gte: startDate, lte: endDate } : undefined
+      },
       include: { holes: { orderBy: { createdAt: "asc" } } },
       orderBy: [{ date: "asc" }, { teamName: "asc" }]
     });
@@ -342,7 +349,7 @@ export default async function RelatoriosPerfuracaoPage({ searchParams }: { searc
   const filteredSummary = summarizeRecords(records);
   const reportSummary = summarizeRecords(reportRecords);
   const reportPeriod = hasReportPeriod
-    ? `${params.inicio ? formatDate(new Date(`${params.inicio}T00:00:00.000Z`)) : "Início"} até ${params.fim ? formatDate(new Date(`${params.fim}T00:00:00.000Z`)) : "Hoje"}`
+    ? `${params.inicio ? formatDate(new Date(`${params.inicio}T00:00:00.000Z`)) : "Início"} até ${params.fim ? formatDate(new Date(`${params.fim}T00:00:00.000Z`)) : "Hoje"}${selectedShift ? ` | Turno: ${formatDrillingShift(selectedShift)}` : ""}`
     : "";
 
   return (
@@ -364,6 +371,12 @@ export default async function RelatoriosPerfuracaoPage({ searchParams }: { searc
         <form className="report-period-form">
           <label>De<input name="inicio" type="date" defaultValue={params.inicio ?? ""} /></label>
           <label>Até<input name="fim" type="date" defaultValue={params.fim ?? ""} /></label>
+          <label>Turno
+            <select name="turno" defaultValue={selectedShift}>
+              <option value="">Todos</option>
+              {drillingShiftOptions.map((shift) => <option key={shift.value} value={shift.value}>{shift.label}</option>)}
+            </select>
+          </label>
           <button type="submit">Gerar relatório</button>
         </form>
       </section>
@@ -422,6 +435,12 @@ export default async function RelatoriosPerfuracaoPage({ searchParams }: { searc
           <select name="atividade" defaultValue={params.atividade ?? ""}>
             <option value="">Todas</option>
             {atividades.map((item) => <option key={item.activityCode}>{item.activityCode}</option>)}
+          </select>
+        </label>
+        <label>Turno
+          <select name="turno" defaultValue={selectedShift}>
+            <option value="">Todos</option>
+            {drillingShiftOptions.map((shift) => <option key={shift.value} value={shift.value}>{shift.label}</option>)}
           </select>
         </label>
         <label>De<input name="inicio" type="date" defaultValue={params.inicio ?? ""} /></label>

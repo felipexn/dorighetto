@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/format";
+import { ensurePayrollSchema } from "@/lib/payroll-schema";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -15,12 +16,20 @@ type Props = {
 export default async function FechamentoPage({ params }: Props) {
   const session = await requireSession();
   const { id } = await params;
+
+  await ensurePayrollSchema(prisma);
+
   const closure = await prisma.payrollClosure.findUnique({
     where: { id },
-    include: { entries: { orderBy: { date: "asc" } } }
+    include: {
+      entries: { orderBy: { date: "asc" } },
+      advances: { orderBy: { createdAt: "asc" } }
+    }
   });
 
   if (!closure) notFound();
+
+  const grossTotal = closure.totalDaily.add(closure.totalOvertime);
 
   return (
     <AppShell active="diarias" name={session.name} role={session.role}>
@@ -49,7 +58,7 @@ export default async function FechamentoPage({ params }: Props) {
 
           <div className="pdf-title">
             <h2>RECIBO DE PAGAMENTO</h2>
-            <p>Declaro que recebi da empresa Dorighetto Perfuração o valor referente as diárias trabalhadas no período informado abaixo.</p>
+            <p>Declaro que recebi da empresa Dorighetto Perfuração o valor líquido referente às diárias trabalhadas no período informado abaixo.</p>
           </div>
 
           <div className="pdf-info-grid">
@@ -58,7 +67,7 @@ export default async function FechamentoPage({ params }: Props) {
             <div><span>Período</span><strong>{formatDate(closure.periodStart)} a {formatDate(closure.periodEnd)}</strong></div>
             <div><span>Data do pagamento</span><strong>{formatDate(closure.paidAt)}</strong></div>
             <div><span>Dias trabalhados</span><strong>{closure.daysWorked}</strong></div>
-            <div><span>Total recebido</span><strong>{formatCurrency(decimalToNumber(closure.totalPaid))}</strong></div>
+            <div><span>Total líquido recebido</span><strong>{formatCurrency(decimalToNumber(closure.totalPaid))}</strong></div>
           </div>
 
           <div className="pdf-table">
@@ -75,14 +84,28 @@ export default async function FechamentoPage({ params }: Props) {
             ))}
           </div>
 
+          {closure.advances.length > 0 ? (
+            <div className="pdf-advance-box">
+              <strong>Vales descontados</strong>
+              {closure.advances.map((advance) => (
+                <div key={advance.id}>
+                  <span>{advance.notes}</span>
+                  <strong>{formatCurrency(decimalToNumber(advance.amount))}</strong>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
           <div className="pdf-total-box">
             <div><span>Total de diárias</span><strong>{formatCurrency(decimalToNumber(closure.totalDaily))}</strong></div>
             <div><span>Total horas extras</span><strong>{formatCurrency(decimalToNumber(closure.totalOvertime))}</strong></div>
-            <div className="grand-total"><span>Total geral recebido</span><strong>{formatCurrency(decimalToNumber(closure.totalPaid))}</strong></div>
+            <div><span>Total bruto</span><strong>{formatCurrency(decimalToNumber(grossTotal))}</strong></div>
+            <div><span>Vales descontados</span><strong>- {formatCurrency(decimalToNumber(closure.totalAdvance))}</strong></div>
+            <div className="grand-total"><span>Total líquido recebido</span><strong>{formatCurrency(decimalToNumber(closure.totalPaid))}</strong></div>
           </div>
 
           <p className="pdf-declaration">
-            Eu, {closure.employeeName}, declaro para os devidos fins que recebi o valor total acima descrito, referente aos dias trabalhados no período informado.
+            Eu, {closure.employeeName}, declaro para os devidos fins que recebi o valor líquido acima descrito, referente aos dias trabalhados no período informado, já descontados os vales listados neste recibo quando houver.
           </p>
 
           <div className="signature-grid">
@@ -104,7 +127,3 @@ export default async function FechamentoPage({ params }: Props) {
     </AppShell>
   );
 }
-
-
-
-

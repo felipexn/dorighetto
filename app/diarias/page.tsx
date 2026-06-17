@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 import { toDateInput } from "@/lib/diarias";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/format";
+import { ensurePayrollSchema } from "@/lib/payroll-schema";
 
 type SearchParams = Promise<{
   funcionario?: string;
@@ -18,6 +19,7 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
   const session = await requireSession();
   const params = await searchParams;
   const isAdmin = session.role === "ADMIN";
+  await ensurePayrollSchema(prisma);
 
   const entries = await prisma.dailyEntry.findMany({
     where: {

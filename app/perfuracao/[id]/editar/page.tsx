@@ -10,7 +10,13 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
 import { toDateInput } from "@/lib/diarias";
 import { ensureDrillingSchema } from "@/lib/drilling-schema";
-import { defaultDrillingMachineOptions, normalizeDrillingBankName, normalizeDrillingMachineName } from "@/lib/drilling";
+import {
+  defaultDrillingMachineOptions,
+  drillingShiftOptions,
+  normalizeDrillingBankName,
+  normalizeDrillingMachineName,
+  normalizeDrillingShift
+} from "@/lib/drilling";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -94,11 +100,17 @@ export default async function EditarPerfuracaoPage({ params, searchParams }: Pro
           </datalist>
         </label>
         <label>Perfuratriz
-          <select name="machineName" defaultValue={normalizeDrillingMachineName(record.machineName)} required>
-            {machineOptions.map((machine) => <option key={machine} value={machine}>{machine}</option>)}
-          </select>
+          <input name="machineName" list="machine-options-edit" placeholder="Ex: 80" defaultValue={normalizeDrillingMachineName(record.machineName)} required />
+          <datalist id="machine-options-edit">
+            {machineOptions.map((machine) => <option key={machine} value={machine} />)}
+          </datalist>
         </label>
         <label>Banco<input name="bankName" placeholder="Ex: BANCO CELESTE" defaultValue={normalizeDrillingBankName(record.bankName)} required /></label>
+        <label>Turno
+          <select name="shift" defaultValue={normalizeDrillingShift(record.shift)} required>
+            {drillingShiftOptions.map((shift) => <option key={shift.value} value={shift.value}>{shift.label}</option>)}
+          </select>
+        </label>
         <label>H. motor inicial<input name="motorStart" placeholder="Ex: 1245" defaultValue={record.motorStart} required /></label>
         <label>H. motor final<input name="motorEnd" placeholder="Ex: 1276" defaultValue={record.motorEnd} required /></label>
         <label>Código da atividade<input name="activityCode" placeholder="Ex: AT-234" defaultValue={record.activityCode} required /></label>

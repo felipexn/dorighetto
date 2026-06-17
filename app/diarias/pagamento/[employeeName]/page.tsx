@@ -1,14 +1,16 @@
 ﻿import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Prisma } from "@prisma/client";
+import { addPayrollAdvanceAction, deletePayrollAdvanceAction } from "@/app/actions";
 import { AppShell } from "@/components/app-shell";
 import { ConfirmPaymentForm } from "@/components/confirm-payment-form";
 import { PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/format";
+import { ensurePayrollSchema } from "@/lib/payroll-schema";
 
 type Props = {
   params: Promise<{ employeeName: string }>;
@@ -20,13 +22,24 @@ export default async function PagamentoDiariaPage({ params }: Props) {
   const employeeName = decodeURIComponent(rawEmployeeName);
   const isAdmin = session.role === "ADMIN";
 
-  const entries = await prisma.dailyEntry.findMany({
-    where: {
-      employeeName,
-      status: "PENDENTE"
-    },
-    orderBy: { date: "asc" }
-  });
+  await ensurePayrollSchema(prisma);
+
+  const [entries, advances] = await Promise.all([
+    prisma.dailyEntry.findMany({
+      where: {
+        employeeName,
+        status: "PENDENTE"
+      },
+      orderBy: { date: "asc" }
+    }),
+    prisma.payrollAdvance.findMany({
+      where: {
+        employeeName,
+        status: "PENDENTE"
+      },
+      orderBy: { createdAt: "asc" }
+    })
+  ]);
 
   if (entries.length === 0) notFound();
 
@@ -34,8 +47,10 @@ export default async function PagamentoDiariaPage({ params }: Props) {
   const periodEnd = entries[entries.length - 1].date;
   const totalDaily = entries.reduce((total, entry) => total.add(entry.dailyValue), new Prisma.Decimal(0));
   const totalOvertime = entries.reduce((total, entry) => total.add(entry.overtimeTotal), new Prisma.Decimal(0));
-  const totalPaid = entries.reduce((total, entry) => total.add(entry.dayTotal), new Prisma.Decimal(0));
-  const totalPaidFormatted = formatCurrency(decimalToNumber(totalPaid));
+  const totalGross = entries.reduce((total, entry) => total.add(entry.dayTotal), new Prisma.Decimal(0));
+  const totalAdvance = advances.reduce((total, advance) => total.add(advance.amount), new Prisma.Decimal(0));
+  const totalNet = totalGross.sub(totalAdvance);
+  const totalNetFormatted = formatCurrency(decimalToNumber(totalNet));
 
   return (
     <AppShell active="diarias" name={session.name} role={session.role}>
@@ -46,10 +61,54 @@ export default async function PagamentoDiariaPage({ params }: Props) {
         actions={
           <>
             <Link className="button secondary" href="/diarias"><ArrowLeft size={18} /> Voltar</Link>
-            {isAdmin ? <ConfirmPaymentForm employeeName={employeeName} total={totalPaidFormatted} /> : null}
+            {isAdmin ? <ConfirmPaymentForm employeeName={employeeName} total={totalNetFormatted} /> : null}
           </>
         }
       />
+
+      {isAdmin ? (
+        <section className="panel advance-panel">
+          <div>
+            <span className="eyebrow">Vales pendentes</span>
+            <h2>Adicionar vale antes do pagamento</h2>
+            <p>O vale fica salvo para este funcionário. Se o pagamento for confirmado, ele será descontado no recibo.</p>
+          </div>
+
+          <form className="advance-form" action={addPayrollAdvanceAction}>
+            <input type="hidden" name="employeeName" value={employeeName} />
+            <label>
+              Valor do vale
+              <input name="amount" placeholder="0,00" required />
+            </label>
+            <label className="wide-field">
+              Observação / motivo
+              <input name="notes" placeholder="Ex: vale transporte, adiantamento, compra..." required />
+            </label>
+            <button type="submit">Salvar vale</button>
+          </form>
+
+          <div className="advance-list">
+            {advances.length === 0 ? (
+              <p className="muted-text">Nenhum vale pendente para descontar neste pagamento.</p>
+            ) : advances.map((advance) => (
+              <article className="advance-item" key={advance.id}>
+                <div>
+                  <strong>{formatCurrency(decimalToNumber(advance.amount))}</strong>
+                  <span>{advance.notes}</span>
+                  <small>Lançado em {formatDate(advance.createdAt)}</small>
+                </div>
+                <form action={deletePayrollAdvanceAction}>
+                  <input type="hidden" name="id" value={advance.id} />
+                  <input type="hidden" name="employeeName" value={employeeName} />
+                  <button className="icon-danger" type="submit" aria-label="Remover vale pendente">
+                    <Trash2 size={16} />
+                  </button>
+                </form>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="pdf-preview-wrap">
         <div className="pdf-page">
@@ -63,8 +122,8 @@ export default async function PagamentoDiariaPage({ params }: Props) {
           </header>
 
           <div className="pdf-title">
-            <h2>PREVIA DE PAGAMENTO</h2>
-            <p>Confira os dias, valores e total antes de confirmar. O status so muda para pago apos a confirmação.</p>
+            <h2>PRÉVIA DE PAGAMENTO</h2>
+            <p>Confira os dias, valores, vales e total líquido antes de confirmar. O status só muda para pago após a confirmação.</p>
           </div>
 
           <div className="pdf-info-grid">
@@ -73,7 +132,7 @@ export default async function PagamentoDiariaPage({ params }: Props) {
             <div><span>Período</span><strong>{formatDate(periodStart)} a {formatDate(periodEnd)}</strong></div>
             <div><span>Status</span><strong>PENDENTE</strong></div>
             <div><span>Dias trabalhados</span><strong>{entries.length}</strong></div>
-            <div><span>Total a pagar</span><strong>{totalPaidFormatted}</strong></div>
+            <div><span>Total líquido a pagar</span><strong>{totalNetFormatted}</strong></div>
           </div>
 
           <div className="pdf-table">
@@ -90,10 +149,23 @@ export default async function PagamentoDiariaPage({ params }: Props) {
             ))}
           </div>
 
+          {advances.length > 0 ? (
+            <div className="pdf-advance-box">
+              <strong>Vales a descontar</strong>
+              {advances.map((advance) => (
+                <div key={advance.id}>
+                  <span>{advance.notes}</span>
+                  <strong>{formatCurrency(decimalToNumber(advance.amount))}</strong>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
           <div className="pdf-total-box">
             <div><span>Total de diárias</span><strong>{formatCurrency(decimalToNumber(totalDaily))}</strong></div>
             <div><span>Total horas extras</span><strong>{formatCurrency(decimalToNumber(totalOvertime))}</strong></div>
-            <div className="grand-total"><span>Total geral a pagar</span><strong>{totalPaidFormatted}</strong></div>
+            <div><span>Vales pendentes</span><strong>- {formatCurrency(decimalToNumber(totalAdvance))}</strong></div>
+            <div className="grand-total"><span>Total líquido a pagar</span><strong>{totalNetFormatted}</strong></div>
           </div>
 
           <p className="pdf-declaration">
@@ -119,8 +191,3 @@ export default async function PagamentoDiariaPage({ params }: Props) {
     </AppShell>
   );
 }
-
-
-
-
-

@@ -104,13 +104,20 @@ function drawHeader(doc: PdfDoc, closure: { receiptNumber: string }) {
 
 export async function GET(_: Request, { params }: Props) {
   const { prisma } = await import("@/lib/prisma");
+  const { ensurePayrollSchema } = await import("@/lib/payroll-schema");
   const PDFDocument = (await import("pdfkit")).default;
   const { id } = await params;
+
+  await ensurePayrollSchema(prisma);
+
   const closure = await prisma.payrollClosure.findUnique({
     where: { id },
     include: {
       entries: {
         orderBy: { date: "asc" }
+      },
+      advances: {
+        orderBy: { createdAt: "asc" }
       }
     }
   });
@@ -139,7 +146,7 @@ export async function GET(_: Request, { params }: Props) {
     doc.fillColor(COLOR.muted).font("Helvetica").fontSize(10);
     text(
       doc,
-      "Declaro que recebi da empresa Dorighetto Perfuração o valor referente às diárias trabalhadas no período informado abaixo.",
+      "Declaro que recebi da empresa Dorighetto Perfuração o valor líquido referente às diárias trabalhadas no período informado abaixo.",
       contentX + 46,
       y,
       { width: contentWidth - 92, align: "center" }
@@ -187,18 +194,49 @@ export async function GET(_: Request, { params }: Props) {
     });
 
     y += 18;
+    if (closure.advances.length > 0) {
+      const advanceBoxHeight = 36 + closure.advances.length * 24;
+      if (y > PAGE.height - advanceBoxHeight - 155) {
+        doc.addPage({ margin: 0 });
+        y = PAGE.margin;
+      }
+
+      drawRoundedRect(doc, contentX, y, contentWidth, advanceBoxHeight, COLOR.paper);
+      doc.fillColor(COLOR.ink).font("Helvetica-Bold").fontSize(10);
+      text(doc, "VALES DESCONTADOS", contentX + 12, y + 12, { width: contentWidth - 24 });
+
+      closure.advances.forEach((advance, index) => {
+        const rowY = y + 36 + index * 24;
+        doc.moveTo(contentX, rowY).lineTo(contentX + contentWidth, rowY).lineWidth(1).strokeColor(COLOR.softLine).stroke();
+        doc.fillColor(COLOR.muted).font("Helvetica").fontSize(9);
+        text(doc, advance.notes, contentX + 12, rowY + 7, { width: contentWidth - 150 });
+        doc.fillColor(COLOR.ink).font("Helvetica-Bold").fontSize(9);
+        text(doc, formatCurrency(decimalToNumber(advance.amount)), contentX + contentWidth - 132, rowY + 7, { width: 120, align: "right" });
+      });
+
+      y += advanceBoxHeight + 18;
+    }
+
     const totalBoxWidth = 265;
     const totalBoxX = contentX + contentWidth - totalBoxWidth;
-    drawRoundedRect(doc, totalBoxX, y, totalBoxWidth, 92, COLOR.paper);
     const totalRows = [
       ["Total de diárias", formatCurrency(decimalToNumber(closure.totalDaily))],
       ["Total horas extras", formatCurrency(decimalToNumber(closure.totalOvertime))],
-      ["Total geral recebido", formatCurrency(decimalToNumber(closure.totalPaid))]
+      ["Total bruto", formatCurrency(decimalToNumber(closure.totalDaily.add(closure.totalOvertime)))],
+      ["Vales descontados", `- ${formatCurrency(decimalToNumber(closure.totalAdvance))}`],
+      ["Total líquido recebido", formatCurrency(decimalToNumber(closure.totalPaid))]
     ];
+    const totalBoxHeight = totalRows.length * 30 + 2;
+    if (y > PAGE.height - totalBoxHeight - 155) {
+      doc.addPage({ margin: 0 });
+      y = PAGE.margin;
+    }
+    drawRoundedRect(doc, totalBoxX, y, totalBoxWidth, totalBoxHeight, COLOR.paper);
 
     totalRows.forEach(([label, value], index) => {
       const rowY = y + index * 30;
-      if (index === 2) {
+      const isGrandTotal = index === totalRows.length - 1;
+      if (isGrandTotal) {
         doc.rect(totalBoxX, rowY, totalBoxWidth, 32).fill(COLOR.panel);
       }
       if (index > 0) {
@@ -206,10 +244,10 @@ export async function GET(_: Request, { params }: Props) {
       }
       doc.fillColor(COLOR.muted).font("Helvetica").fontSize(9);
       text(doc, label, totalBoxX + 12, rowY + 10, { width: 128 });
-      doc.fillColor(COLOR.ink).font(index === 2 ? "Helvetica-Bold" : "Helvetica-Bold").fontSize(index === 2 ? 11 : 10);
+      doc.fillColor(COLOR.ink).font("Helvetica-Bold").fontSize(isGrandTotal ? 11 : 10);
       text(doc, value, totalBoxX + 138, rowY + 10, { width: 112, align: "right" });
     });
-    y += 122;
+    y += totalRows.length * 30 + 32;
 
     if (y > PAGE.height - 150) {
       doc.addPage({ margin: 0 });
@@ -219,7 +257,7 @@ export async function GET(_: Request, { params }: Props) {
     doc.fillColor(COLOR.ink).font("Helvetica").fontSize(10.5);
     text(
       doc,
-      `Eu, ${closure.employeeName}, declaro para os devidos fins que recebi o valor total acima descrito, referente aos dias trabalhados no período informado.`,
+      `Eu, ${closure.employeeName}, declaro para os devidos fins que recebi o valor líquido acima descrito, referente aos dias trabalhados no período informado, já descontados os vales listados neste recibo quando houver.`,
       contentX,
       y,
       { width: contentWidth, align: "justify" }

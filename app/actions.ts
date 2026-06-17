@@ -9,7 +9,8 @@ import { createSession, destroySession, requireAdmin } from "@/lib/session";
 import { parseMoney, requiredText } from "@/lib/finance";
 import { makeReceiptNumber, parseDecimal } from "@/lib/diarias";
 import { ensureDrillingSchema } from "@/lib/drilling-schema";
-import { normalizeDrillingBankName, normalizeDrillingMachineName } from "@/lib/drilling";
+import { normalizeDrillingBankName, normalizeDrillingMachineName, normalizeDrillingShift } from "@/lib/drilling";
+import { ensurePayrollSchema } from "@/lib/payroll-schema";
 
 function drillingFormError(path: string, message: string): never {
   redirect(`${path}?erro=${encodeURIComponent(message)}`);
@@ -278,10 +279,56 @@ export async function updateDailyEntryAction(formData: FormData) {
   redirect("/diarias?funcionario=&funcao=&status=PENDENTE");
 }
 
+export async function addPayrollAdvanceAction(formData: FormData) {
+  await requireAdmin();
+  await ensurePayrollSchema(prisma);
+
+  const employeeName = requiredText(formData, "employeeName").toUpperCase();
+  const amount = parseDecimal(formData.get("amount"));
+  const notes = requiredText(formData, "notes");
+
+  if (amount.lte(0)) {
+    throw new Error("Informe um valor de vale maior que zero.");
+  }
+
+  await prisma.payrollAdvance.create({
+    data: {
+      employeeName,
+      amount,
+      notes
+    }
+  });
+
+  revalidatePath("/diarias");
+  revalidatePath(`/diarias/pagamento/${encodeURIComponent(employeeName)}`);
+  redirect(`/diarias/pagamento/${encodeURIComponent(employeeName)}`);
+}
+
+export async function deletePayrollAdvanceAction(formData: FormData) {
+  await requireAdmin();
+  await ensurePayrollSchema(prisma);
+
+  const id = requiredText(formData, "id");
+  const employeeName = requiredText(formData, "employeeName").toUpperCase();
+
+  await prisma.payrollAdvance.deleteMany({
+    where: {
+      id,
+      employeeName,
+      status: "PENDENTE"
+    }
+  });
+
+  revalidatePath("/diarias");
+  revalidatePath(`/diarias/pagamento/${encodeURIComponent(employeeName)}`);
+  redirect(`/diarias/pagamento/${encodeURIComponent(employeeName)}`);
+}
+
 export async function payFortnightAction(formData: FormData) {
   await requireAdmin();
+  await ensurePayrollSchema(prisma);
 
-  const employeeName = requiredText(formData, "employeeName");
+  const employeeName = requiredText(formData, "employeeName").toUpperCase();
 
   const closure = await prisma.$transaction(async (tx) => {
     const entries = await tx.dailyEntry.findMany({
@@ -294,6 +341,16 @@ export async function payFortnightAction(formData: FormData) {
       }
     });
 
+    const advances = await tx.payrollAdvance.findMany({
+      where: {
+        employeeName,
+        status: "PENDENTE"
+      },
+      orderBy: {
+        createdAt: "asc"
+      }
+    });
+
     if (entries.length === 0) {
       throw new Error("Não existem diárias pendentes para este funcionário.");
     }
@@ -302,7 +359,9 @@ export async function payFortnightAction(formData: FormData) {
     const end = entries[entries.length - 1].date;
     const totalDaily = entries.reduce((total, entry) => total.add(entry.dailyValue), new Prisma.Decimal(0));
     const totalOvertime = entries.reduce((total, entry) => total.add(entry.overtimeTotal), new Prisma.Decimal(0));
-    const totalPaid = entries.reduce((total, entry) => total.add(entry.dayTotal), new Prisma.Decimal(0));
+    const totalGross = entries.reduce((total, entry) => total.add(entry.dayTotal), new Prisma.Decimal(0));
+    const totalAdvance = advances.reduce((total, advance) => total.add(advance.amount), new Prisma.Decimal(0));
+    const totalPaid = totalGross.sub(totalAdvance);
 
     const created = await tx.payrollClosure.create({
       data: {
@@ -313,6 +372,7 @@ export async function payFortnightAction(formData: FormData) {
         daysWorked: entries.length,
         totalDaily,
         totalOvertime,
+        totalAdvance,
         totalPaid,
         receiptNumber: makeReceiptNumber()
       }
@@ -329,6 +389,20 @@ export async function payFortnightAction(formData: FormData) {
         closureId: created.id
       }
     });
+
+    if (advances.length > 0) {
+      await tx.payrollAdvance.updateMany({
+        where: {
+          id: {
+            in: advances.map((advance) => advance.id)
+          }
+        },
+        data: {
+          status: "DESCONTADO",
+          closureId: created.id
+        }
+      });
+    }
 
     return created;
   });
@@ -355,6 +429,7 @@ export async function createDrillingRecordAction(formData: FormData) {
         machineName: normalizeDrillingMachineName(requiredText(formData, "machineName")),
         bankName: normalizeDrillingBankName(requiredText(formData, "bankName")),
         activityCode: requiredText(formData, "activityCode").toUpperCase(),
+        shift: normalizeDrillingShift(String(formData.get("shift") ?? "")),
         motorStart: requiredText(formData, "motorStart"),
         motorEnd: requiredText(formData, "motorEnd"),
         notes: notes || null,
@@ -392,6 +467,7 @@ export async function updateDrillingRecordAction(formData: FormData) {
           machineName: normalizeDrillingMachineName(requiredText(formData, "machineName")),
           bankName: normalizeDrillingBankName(requiredText(formData, "bankName")),
           activityCode: requiredText(formData, "activityCode").toUpperCase(),
+          shift: normalizeDrillingShift(String(formData.get("shift") ?? "")),
           motorStart: requiredText(formData, "motorStart"),
           motorEnd: requiredText(formData, "motorEnd"),
           notes: notes || null
