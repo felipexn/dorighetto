@@ -1360,9 +1360,16 @@ textarea:focus {
 
 .perf-form {
   display: grid;
-  grid-template-columns: 140px minmax(150px, 1fr) minmax(130px, 1fr) minmax(120px, 1fr) 120px 150px 150px minmax(150px, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
   gap: 14px;
   align-items: end;
+}
+
+.perf-form label,
+.holes-form,
+.hole-row label,
+.downtime-row label {
+  min-width: 0;
 }
 
 .holes-form {
@@ -1379,6 +1386,7 @@ textarea:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -2474,6 +2482,20 @@ textarea:focus {
   }
 }
 
+@media (max-width: 1080px) {
+  .perf-form {
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  }
+
+  .holes-form {
+    overflow: hidden;
+  }
+
+  .holes-head button {
+    max-width: 100%;
+    white-space: normal;
+  }
+}
 @media (max-width: 720px) {
   .landing-nav {
     position: static;

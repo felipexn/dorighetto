@@ -240,7 +240,7 @@ export function PerfuracaoFormFields({
       form.removeEventListener("submit", handleSubmit);
       form.removeEventListener("keydown", handleKeyDown);
     };
-  }, [holes]);
+  }, [holes, downtimes]);
 
   useEffect(() => {
     if (pending) {
