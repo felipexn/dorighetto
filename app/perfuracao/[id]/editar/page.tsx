@@ -7,7 +7,7 @@ import { PerfuracaoFormFields } from "@/components/perfuracao-form";
 import { PageHeader } from "@/components/ui";
 import { decimalToNumber } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/session";
+import { requireModuleWrite } from "@/lib/session";
 import { toDateInput } from "@/lib/diarias";
 import { ensureDrillingSchema } from "@/lib/drilling-schema";
 import {
@@ -24,7 +24,7 @@ type Props = {
 };
 
 export default async function EditarPerfuracaoPage({ params, searchParams }: Props) {
-  const session = await requireAdmin();
+  const session = await requireModuleWrite("perfuracao");
   const { id } = await params;
   const query = await searchParams;
   const actionError = query.erro ? decodeURIComponent(query.erro) : "";
@@ -79,7 +79,7 @@ export default async function EditarPerfuracaoPage({ params, searchParams }: Pro
   }));
 
   return (
-    <AppShell active="perfuracao" name={session.name} role={session.role}>
+    <AppShell active="perfuracao" name={session.name} role={session.role} permissions={session.permissions}>
       <PageHeader
         eyebrow="Editar perfuração"
         title={`Ficha ${record.teamName}`}

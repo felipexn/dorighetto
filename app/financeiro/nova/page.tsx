@@ -1,15 +1,15 @@
-﻿import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { createSheetAction } from "@/app/actions";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/ui";
-import { requireAdmin } from "@/lib/session";
+import { requireModuleWrite } from "@/lib/session";
 
 export default async function NovaPlanilhaPage() {
-  const session = await requireAdmin();
+  const session = await requireModuleWrite("financeiro");
 
   return (
-    <AppShell name={session.name} role={session.role}>
+    <AppShell name={session.name} role={session.role} permissions={session.permissions}>
       <PageHeader
         eyebrow="Nova planilha"
         title="Criar planilha financeira"

@@ -2,6 +2,8 @@
 import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
 import type { UserRole } from "@prisma/client";
+import type { ModuleKey, UserPermissionSet } from "@/lib/user-permissions";
+import { canAccessModule, canWriteModule, defaultPermissionsForRole, firstAllowedPath } from "@/lib/user-permissions";
 
 const cookieName = "dorighetto_session";
 
@@ -10,6 +12,7 @@ type SessionPayload = {
   name: string;
   email: string;
   role: UserRole;
+  permissions: UserPermissionSet;
 };
 
 function getSecret() {
@@ -49,7 +52,15 @@ export async function getSession() {
 
   try {
     const { payload } = await jwtVerify(token, getSecret());
-    return payload as SessionPayload;
+    const session = payload as Partial<SessionPayload>;
+    if (!session.role || !session.userId || !session.name || !session.email) return null;
+    return {
+      userId: session.userId,
+      name: session.name,
+      email: session.email,
+      role: session.role,
+      permissions: session.permissions ?? defaultPermissionsForRole(session.role === "ADMIN" ? "ADMIN" : "LEITOR")
+    };
   } catch {
     return null;
   }
@@ -63,7 +74,18 @@ export async function requireSession() {
 
 export async function requireAdmin() {
   const session = await requireSession();
-  if (session.role !== "ADMIN") redirect("/");
+  if (session.role !== "ADMIN" && !session.permissions.canManageUsers) redirect(firstAllowedPath(session.permissions));
   return session;
 }
 
+export async function requireModule(module: ModuleKey) {
+  const session = await requireSession();
+  if (!canAccessModule(session.permissions, module)) redirect(firstAllowedPath(session.permissions));
+  return session;
+}
+
+export async function requireModuleWrite(module: ModuleKey) {
+  const session = await requireModule(module);
+  if (!canWriteModule(session.permissions, module)) redirect(firstAllowedPath(session.permissions));
+  return session;
+}

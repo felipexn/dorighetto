@@ -1,16 +1,18 @@
-﻿"use server";
+"use server";
 
 import bcrypt from "bcryptjs";
-import { EntryType, Prisma } from "@prisma/client";
+import { EntryType, Prisma, type UserRole } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { createSession, destroySession, requireAdmin } from "@/lib/session";
+import { createSession, destroySession, requireAdmin, requireModuleWrite } from "@/lib/session";
 import { parseMoney, requiredText } from "@/lib/finance";
 import { makeReceiptNumber, parseDecimal } from "@/lib/diarias";
 import { ensureDrillingSchema } from "@/lib/drilling-schema";
 import { normalizeDrillingBankName, normalizeDrillingMachineName, normalizeDrillingShift } from "@/lib/drilling";
 import { ensurePayrollSchema } from "@/lib/payroll-schema";
+import { ensureUserSchema } from "@/lib/user-schema";
+import { defaultPermissionsForRole, firstAllowedPath, resolvePermissions } from "@/lib/user-permissions";
 
 function drillingFormError(path: string, message: string): never {
   redirect(`${path}?erro=${encodeURIComponent(message)}`);
@@ -47,11 +49,11 @@ function readDrillingDowntimes(formData: FormData, errorPath: string) {
     try {
       hours = parseDecimal(item.hours);
     } catch {
-      drillingFormError(errorPath, `Horas inválidas para a parada ${item.reason}.`);
+      drillingFormError(errorPath, `Horas invÃƒÂ¡lidas para a parada ${item.reason}.`);
     }
 
     if (hours.lte(0)) {
-      drillingFormError(errorPath, `Horas inválidas para a parada ${item.reason}.`);
+      drillingFormError(errorPath, `Horas invÃƒÂ¡lidas para a parada ${item.reason}.`);
     }
 
     return {
@@ -80,7 +82,7 @@ function readDrillingHoles(formData: FormData, errorPath: string, notes: string,
   }
 
   if (pairs.length === 0 && !notes && !hasDowntime) {
-    drillingFormError(errorPath, "Adicione pelo menos um furo com ID e metragem, uma parada ou preencha a observação.");
+    drillingFormError(errorPath, "Adicione pelo menos um furo com ID e metragem, uma parada ou preencha a observaÃƒÂ§ÃƒÂ£o.");
   }
 
   return pairs.map((item) => {
@@ -88,11 +90,11 @@ function readDrillingHoles(formData: FormData, errorPath: string, notes: string,
     try {
       meters = parseDecimal(item.meters);
     } catch {
-      drillingFormError(errorPath, `Metragem inválida para o furo ${item.code}.`);
+      drillingFormError(errorPath, `Metragem invÃƒÂ¡lida para o furo ${item.code}.`);
     }
 
     if (meters.lte(0)) {
-      drillingFormError(errorPath, `Metragem inválida para o furo ${item.code}.`);
+      drillingFormError(errorPath, `Metragem invÃƒÂ¡lida para o furo ${item.code}.`);
     }
 
     return {
@@ -103,31 +105,34 @@ function readDrillingHoles(formData: FormData, errorPath: string, notes: string,
 }
 
 export async function loginAction(_: unknown, formData: FormData) {
+  await ensureUserSchema(prisma);
+
   const email = requiredText(formData, "email").toLowerCase();
   const password = requiredText(formData, "password");
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-    return { error: "Email ou senha inválidos." };
+  if (!user || !user.isActive || !(await bcrypt.compare(password, user.passwordHash))) {
+    return { error: "Usuário ou senha inválidos." };
   }
 
+  const permissions = resolvePermissions(user);
   await createSession({
     userId: user.id,
     name: user.name,
     email: user.email,
-    role: user.role
+    role: user.role,
+    permissions
   });
 
-  redirect("/financeiro");
+  redirect(firstAllowedPath(permissions));
 }
-
 export async function logoutAction() {
   await destroySession();
   redirect("/");
 }
 
 export async function createSheetAction(formData: FormData) {
-  await requireAdmin();
+  await requireModuleWrite("financeiro");
 
   const sheet = await prisma.financialSheet.create({
     data: {
@@ -143,7 +148,7 @@ export async function createSheetAction(formData: FormData) {
 }
 
 export async function deleteSheetAction(formData: FormData) {
-  await requireAdmin();
+  await requireModuleWrite("financeiro");
   const id = requiredText(formData, "id");
   await prisma.financialSheet.delete({ where: { id } });
   revalidatePath("/");
@@ -152,7 +157,7 @@ export async function deleteSheetAction(formData: FormData) {
 }
 
 export async function updateSheetAction(formData: FormData) {
-  await requireAdmin();
+  await requireModuleWrite("financeiro");
 
   const id = requiredText(formData, "id");
   await prisma.financialSheet.update({
@@ -170,7 +175,7 @@ export async function updateSheetAction(formData: FormData) {
 }
 
 export async function createEntryAction(formData: FormData) {
-  await requireAdmin();
+  await requireModuleWrite("financeiro");
 
   const sheetId = requiredText(formData, "sheetId");
   const type = requiredText(formData, "type") as EntryType;
@@ -194,7 +199,7 @@ export async function createEntryAction(formData: FormData) {
 }
 
 export async function deleteEntryAction(formData: FormData) {
-  await requireAdmin();
+  await requireModuleWrite("financeiro");
 
   const id = requiredText(formData, "id");
   const sheetId = requiredText(formData, "sheetId");
@@ -206,7 +211,7 @@ export async function deleteEntryAction(formData: FormData) {
 }
 
 export async function createDailyEntryAction(formData: FormData) {
-  await requireAdmin();
+  await requireModuleWrite("diarias");
 
   const date = requiredText(formData, "date");
   const dailyValue = parseDecimal(formData.get("dailyValue"));
@@ -233,7 +238,7 @@ export async function createDailyEntryAction(formData: FormData) {
 }
 
 export async function deleteDailyEntryAction(formData: FormData) {
-  await requireAdmin();
+  await requireModuleWrite("diarias");
 
   const id = requiredText(formData, "id");
   await prisma.dailyEntry.delete({
@@ -247,7 +252,7 @@ export async function deleteDailyEntryAction(formData: FormData) {
 }
 
 export async function updateDailyEntryAction(formData: FormData) {
-  await requireAdmin();
+  await requireModuleWrite("diarias");
 
   const id = requiredText(formData, "id");
   const date = requiredText(formData, "date");
@@ -280,7 +285,7 @@ export async function updateDailyEntryAction(formData: FormData) {
 }
 
 export async function addPayrollAdvanceAction(formData: FormData) {
-  await requireAdmin();
+  await requireModuleWrite("diarias");
   await ensurePayrollSchema(prisma);
 
   const employeeName = requiredText(formData, "employeeName").toUpperCase();
@@ -305,7 +310,7 @@ export async function addPayrollAdvanceAction(formData: FormData) {
 }
 
 export async function deletePayrollAdvanceAction(formData: FormData) {
-  await requireAdmin();
+  await requireModuleWrite("diarias");
   await ensurePayrollSchema(prisma);
 
   const id = requiredText(formData, "id");
@@ -325,7 +330,7 @@ export async function deletePayrollAdvanceAction(formData: FormData) {
 }
 
 export async function payFortnightAction(formData: FormData) {
-  await requireAdmin();
+  await requireModuleWrite("diarias");
   await ensurePayrollSchema(prisma);
 
   const employeeName = requiredText(formData, "employeeName").toUpperCase();
@@ -352,7 +357,7 @@ export async function payFortnightAction(formData: FormData) {
     });
 
     if (entries.length === 0) {
-      throw new Error("Não existem diárias pendentes para este funcionário.");
+      throw new Error("NÃƒÂ£o existem diÃƒÂ¡rias pendentes para este funcionÃƒÂ¡rio.");
     }
 
     const start = entries[0].date;
@@ -413,7 +418,7 @@ export async function payFortnightAction(formData: FormData) {
 }
 
 export async function createDrillingRecordAction(formData: FormData) {
-  await requireAdmin();
+  await requireModuleWrite("perfuracao");
   await ensureDrillingSchema(prisma);
 
   const date = String(formData.get("date") ?? "").trim();
@@ -438,14 +443,14 @@ export async function createDrillingRecordAction(formData: FormData) {
       }
     });
   } catch {
-    redirect("/perfuracao?erro=Não%20foi%20possível%20salvar.%20Sincronize%20o%20schema%20do%20banco%20e%20tente%20novamente.");
+    redirect("/perfuracao?erro=NÃƒÂ£o%20foi%20possÃƒÂ­vel%20salvar.%20Sincronize%20o%20schema%20do%20banco%20e%20tente%20novamente.");
   }
 
   revalidatePath("/perfuracao");
 }
 
 export async function updateDrillingRecordAction(formData: FormData) {
-  await requireAdmin();
+  await requireModuleWrite("perfuracao");
   await ensureDrillingSchema(prisma);
 
   const id = requiredText(formData, "id");
@@ -495,7 +500,7 @@ export async function updateDrillingRecordAction(formData: FormData) {
       }
     });
   } catch {
-    drillingFormError(errorPath, "Não foi possível atualizar a ficha. Sincronize o schema do banco e tente novamente.");
+    drillingFormError(errorPath, "NÃƒÂ£o foi possÃƒÂ­vel atualizar a ficha. Sincronize o schema do banco e tente novamente.");
   }
 
   revalidatePath("/perfuracao");
@@ -504,7 +509,7 @@ export async function updateDrillingRecordAction(formData: FormData) {
 }
 
 export async function deleteDrillingRecordAction(formData: FormData) {
-  await requireAdmin();
+  await requireModuleWrite("perfuracao");
   await ensureDrillingSchema(prisma);
   const id = requiredText(formData, "id");
   await prisma.drillingRecord.delete({ where: { id } });
@@ -515,3 +520,108 @@ export async function deleteDrillingRecordAction(formData: FormData) {
 
 
 
+
+function readUserRole(formData: FormData): UserRole {
+  const role = requiredText(formData, "role") as UserRole;
+  if (!["ADMIN", "FINANCEIRO", "RH", "PERFURACAO", "LEITOR"].includes(role)) {
+    throw new Error("Tipo de usuário inválido.");
+  }
+  return role;
+}
+
+function checkbox(formData: FormData, name: string) {
+  return formData.get(name) === "on";
+}
+
+function readUserPermissionData(formData: FormData, role: UserRole) {
+  if (role === "ADMIN") return defaultPermissionsForRole("ADMIN");
+
+  return {
+    canAccessFinance: checkbox(formData, "canAccessFinance"),
+    canWriteFinance: checkbox(formData, "canWriteFinance"),
+    canAccessDaily: checkbox(formData, "canAccessDaily"),
+    canWriteDaily: checkbox(formData, "canWriteDaily"),
+    canAccessDrilling: checkbox(formData, "canAccessDrilling"),
+    canWriteDrilling: checkbox(formData, "canWriteDrilling"),
+    canManageUsers: checkbox(formData, "canManageUsers")
+  };
+}
+
+export async function createUserAction(formData: FormData) {
+  await requireAdmin();
+  await ensureUserSchema(prisma);
+
+  const role = readUserRole(formData);
+  const password = requiredText(formData, "password");
+  const passwordHash = await bcrypt.hash(password, 10);
+  const permissions = readUserPermissionData(formData, role);
+
+  await prisma.user.create({
+    data: {
+      name: requiredText(formData, "name"),
+      email: requiredText(formData, "email").toLowerCase(),
+      passwordHash,
+      role,
+      isActive: checkbox(formData, "isActive"),
+      ...permissions
+    }
+  });
+
+  revalidatePath("/usuarios");
+  redirect("/usuarios");
+}
+
+export async function updateUserAction(formData: FormData) {
+  await requireAdmin();
+  await ensureUserSchema(prisma);
+
+  const id = requiredText(formData, "id");
+  const role = readUserRole(formData);
+  const password = String(formData.get("password") ?? "").trim();
+  const permissions = readUserPermissionData(formData, role);
+
+  await prisma.user.update({
+    where: { id },
+    data: {
+      name: requiredText(formData, "name"),
+      email: requiredText(formData, "email").toLowerCase(),
+      role,
+      isActive: checkbox(formData, "isActive"),
+      ...permissions,
+      ...(password ? { passwordHash: await bcrypt.hash(password, 10) } : {})
+    }
+  });
+
+  revalidatePath("/usuarios");
+  redirect("/usuarios");
+}
+
+export async function toggleUserActiveAction(formData: FormData) {
+  const session = await requireAdmin();
+  await ensureUserSchema(prisma);
+
+  const id = requiredText(formData, "id");
+  if (id === session.userId) {
+    throw new Error("Você não pode desativar o seu próprio usuário.");
+  }
+
+  await prisma.user.update({
+    where: { id },
+    data: { isActive: checkbox(formData, "isActive") }
+  });
+
+  revalidatePath("/usuarios");
+}
+
+export async function deleteUserAction(formData: FormData) {
+  const session = await requireAdmin();
+  await ensureUserSchema(prisma);
+
+  const id = requiredText(formData, "id");
+  if (id === session.userId) {
+    throw new Error("Você não pode excluir o seu próprio usuário.");
+  }
+
+  await prisma.user.delete({ where: { id } });
+  revalidatePath("/usuarios");
+}

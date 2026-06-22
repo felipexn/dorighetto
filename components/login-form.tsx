@@ -18,8 +18,8 @@ export function LoginForm() {
       </div>
 
       <label>
-        Email
-        <input name="email" type="email" placeholder="admin@dorighetto.local" required />
+        Usuário ou email
+        <input name="email" type="text" placeholder="najara" autoComplete="username" required />
       </label>
 
       <label>
@@ -35,5 +35,3 @@ export function LoginForm() {
     </form>
   );
 }
-
-

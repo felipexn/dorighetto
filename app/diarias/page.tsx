@@ -1,10 +1,10 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { ChevronDown, Download, FileClock, Pencil, Trash2, Eye } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/ui";
 import { createDailyEntryAction, deleteDailyEntryAction } from "@/app/actions";
 import { prisma } from "@/lib/prisma";
-import { requireSession } from "@/lib/session";
+import { requireModule } from "@/lib/session";
 import { toDateInput } from "@/lib/diarias";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/format";
 import { ensurePayrollSchema } from "@/lib/payroll-schema";
@@ -16,9 +16,9 @@ type SearchParams = Promise<{
 }>;
 
 export default async function DiariasPage({ searchParams }: { searchParams: SearchParams }) {
-  const session = await requireSession();
+  const session = await requireModule("diarias");
   const params = await searchParams;
-  const isAdmin = session.role === "ADMIN";
+  const canWrite = session.permissions.canWriteDaily;
   await ensurePayrollSchema(prisma);
 
   const entries = await prisma.dailyEntry.findMany({
@@ -64,7 +64,7 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
   });
 
   return (
-    <AppShell active="diarias" name={session.name} role={session.role}>
+    <AppShell active="diarias" name={session.name} role={session.role} permissions={session.permissions}>
       <PageHeader
         eyebrow="Diárias"
         title="Diárias pendentes"
@@ -72,7 +72,7 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
         actions={<Link className="button secondary" href="/diarias/historico"><FileClock size={18} /> Histórico</Link>}
       />
 
-      {isAdmin ? (
+      {canWrite ? (
         <form className="panel daily-form" action={createDailyEntryAction}>
           <label>Data<input name="date" type="date" defaultValue={toDateInput(new Date())} required /></label>
           <label>Funcionário
@@ -170,7 +170,7 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
                 <span data-label="Valor H.E.">{formatCurrency(decimalToNumber(entry.overtimeRate))}</span>
                 <strong data-label="Total">{formatCurrency(decimalToNumber(entry.dayTotal))}</strong>
                 <span data-label="Status" className={entry.status === "PAGO" ? "tag income" : "tag pending"}>{entry.status}</span>
-                {isAdmin && entry.status === "PENDENTE" ? (
+                {canWrite && entry.status === "PENDENTE" ? (
                   <div className="row-actions" data-label="Ações">
                     <Link className="icon-button" href={`/diarias/${entry.id}/editar`} aria-label="Editar diária"><Pencil size={16} /></Link>
                     <form action={deleteDailyEntryAction}>
@@ -203,7 +203,7 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
               <div><small>Diárias</small><strong>{formatCurrency(decimalToNumber(item._sum.dailyValue ?? 0))}</strong></div>
               <div><small>Horas extras</small><strong>{formatCurrency(decimalToNumber(item._sum.overtimeTotal ?? 0))}</strong></div>
               <div><small>Total</small><strong>{formatCurrency(decimalToNumber(item._sum.dayTotal ?? 0))}</strong></div>
-              {isAdmin ? (
+              {canWrite ? (
                 <Link className="button" href={`/diarias/pagamento/${encodeURIComponent(item.employeeName)}`}>
                   <Eye size={18} /> Ver pagamento
                 </Link>

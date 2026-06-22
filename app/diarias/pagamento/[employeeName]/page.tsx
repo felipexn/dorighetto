@@ -1,4 +1,4 @@
-﻿import Image from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -8,7 +8,7 @@ import { AppShell } from "@/components/app-shell";
 import { ConfirmPaymentForm } from "@/components/confirm-payment-form";
 import { PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
-import { requireSession } from "@/lib/session";
+import { requireModule } from "@/lib/session";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/format";
 import { ensurePayrollSchema } from "@/lib/payroll-schema";
 
@@ -17,10 +17,10 @@ type Props = {
 };
 
 export default async function PagamentoDiariaPage({ params }: Props) {
-  const session = await requireSession();
+  const session = await requireModule("diarias");
   const { employeeName: rawEmployeeName } = await params;
   const employeeName = decodeURIComponent(rawEmployeeName);
-  const isAdmin = session.role === "ADMIN";
+  const canWrite = session.permissions.canWriteDaily;
 
   await ensurePayrollSchema(prisma);
 
@@ -53,7 +53,7 @@ export default async function PagamentoDiariaPage({ params }: Props) {
   const totalNetFormatted = formatCurrency(decimalToNumber(totalNet));
 
   return (
-    <AppShell active="diarias" name={session.name} role={session.role}>
+    <AppShell active="diarias" name={session.name} role={session.role} permissions={session.permissions}>
       <PageHeader
         eyebrow="Prévia"
         title="Prévia de pagamento"
@@ -61,12 +61,12 @@ export default async function PagamentoDiariaPage({ params }: Props) {
         actions={
           <>
             <Link className="button secondary" href="/diarias"><ArrowLeft size={18} /> Voltar</Link>
-            {isAdmin ? <ConfirmPaymentForm employeeName={employeeName} total={totalNetFormatted} /> : null}
+            {canWrite ? <ConfirmPaymentForm employeeName={employeeName} total={totalNetFormatted} /> : null}
           </>
         }
       />
 
-      {isAdmin ? (
+      {canWrite ? (
         <section className="panel advance-panel">
           <div>
             <span className="eyebrow">Vales pendentes</span>

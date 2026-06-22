@@ -1,14 +1,14 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { ArrowLeft, Download } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
-import { requireSession } from "@/lib/session";
+import { requireModule } from "@/lib/session";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/format";
 import { ensurePayrollSchema } from "@/lib/payroll-schema";
 
 export default async function HistoricoDiariasPage() {
-  const session = await requireSession();
+  const session = await requireModule("diarias");
   await ensurePayrollSchema(prisma);
 
   const closures = await prisma.payrollClosure.findMany({
@@ -16,7 +16,7 @@ export default async function HistoricoDiariasPage() {
   });
 
   return (
-    <AppShell active="diarias" name={session.name} role={session.role}>
+    <AppShell active="diarias" name={session.name} role={session.role} permissions={session.permissions}>
       <PageHeader
         eyebrow="Histórico"
         title="Pagamentos realizados"

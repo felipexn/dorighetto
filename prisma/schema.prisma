@@ -9,6 +9,9 @@ datasource db {
 
 enum UserRole {
   ADMIN
+  FINANCEIRO
+  RH
+  PERFURACAO
   LEITOR
 }
 
@@ -33,13 +36,21 @@ enum AdvanceStatus {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  role         UserRole @default(LEITOR)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default(cuid())
+  name               String
+  email              String   @unique
+  passwordHash       String   @map("password_hash")
+  role               UserRole @default(LEITOR)
+  isActive           Boolean  @default(true) @map("is_active")
+  canAccessFinance   Boolean  @default(true) @map("can_access_finance")
+  canWriteFinance    Boolean  @default(false) @map("can_write_finance")
+  canAccessDaily     Boolean  @default(true) @map("can_access_daily")
+  canWriteDaily      Boolean  @default(false) @map("can_write_daily")
+  canAccessDrilling  Boolean  @default(true) @map("can_access_drilling")
+  canWriteDrilling   Boolean  @default(false) @map("can_write_drilling")
+  canManageUsers     Boolean  @default(false) @map("can_manage_users")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@map("users")
 }

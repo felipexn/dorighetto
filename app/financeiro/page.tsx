@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { Plus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { FinancialPrivacyToggle } from "@/components/financial-privacy-toggle";
@@ -6,7 +6,7 @@ import { PrivateValue } from "@/components/private-value";
 import { EmptyState, PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { decimalToNumber, formatCurrency } from "@/lib/format";
-import { requireSession } from "@/lib/session";
+import { requireModule } from "@/lib/session";
 
 async function getSheets() {
   const sheets = await prisma.financialSheet.findMany({
@@ -42,12 +42,12 @@ async function getSheets() {
 }
 
 export default async function FinanceiroPage() {
-  const session = await requireSession();
+  const session = await requireModule("financeiro");
   const sheets = await getSheets();
-  const isAdmin = session.role === "ADMIN";
+  const canWrite = session.permissions.canWriteFinance;
 
   return (
-    <AppShell name={session.name} role={session.role}>
+    <AppShell name={session.name} role={session.role} permissions={session.permissions}>
       <PageHeader
         eyebrow="Financeiro"
         title="Planilhas de entrada e saída"
@@ -55,7 +55,7 @@ export default async function FinanceiroPage() {
         actions={
           <>
             <FinancialPrivacyToggle />
-            {isAdmin ? (
+            {canWrite ? (
               <Link className="button" href="/financeiro/nova">
                 <Plus size={18} /> Nova planilha
               </Link>
@@ -67,7 +67,7 @@ export default async function FinanceiroPage() {
       {sheets.length === 0 ? (
         <EmptyState
           title="Nenhuma planilha criada"
-          text={isAdmin ? "Crie a primeira planilha para começar os lançamentos." : "Aguarde um administrador criar uma planilha."}
+          text={canWrite ? "Crie a primeira planilha para começar os lançamentos." : "Aguarde um administrador criar uma planilha."}
         />
       ) : (
         <section className="sheet-grid">

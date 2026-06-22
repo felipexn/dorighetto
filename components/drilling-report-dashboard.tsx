@@ -1,0 +1,348 @@
+"use client";
+
+import type { CSSProperties, FormEvent, ReactNode } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { Award, BarChart3, CalendarDays, Gauge, Target, TrendingUp } from "lucide-react";
+import { PrintReportButton } from "@/components/print-report-button";
+import { drillingShiftOptions } from "@/lib/drilling";
+import type { ChartItem, DrillingReportData, DrillingReportFilters, DrillingReportSummary } from "@/lib/drilling-report-data";
+import { metersLabel, shortNumber } from "@/lib/drilling-report-data";
+
+type ChartStyle = CSSProperties & {
+  "--bar-width"?: string;
+  "--donut"?: string;
+};
+
+type Props = {
+  initialData: DrillingReportData;
+};
+
+function buildParams(filters: DrillingReportFilters) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+  return params;
+}
+
+function formFilters(form: HTMLFormElement): DrillingReportFilters {
+  const formData = new FormData(form);
+  const read = (key: string) => String(formData.get(key) ?? "").trim() || undefined;
+  return {
+    equipe: read("equipe"),
+    banco: read("banco"),
+    perfuratriz: read("perfuratriz"),
+    atividade: read("atividade"),
+    turno: read("turno"),
+    inicio: read("inicio"),
+    fim: read("fim")
+  };
+}
+
+function MetricCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="analytics-metric-card">
+      <span>{icon}</span>
+      <small>{label}</small>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function EvolutionLineChart({ items }: { items: ChartItem[] }) {
+  const width = 900;
+  const height = 360;
+  const padX = 58;
+  const padTop = 36;
+  const plotBottom = height - 100;
+  const labelY = height - 12;
+  const max = Math.max(...items.map((item) => item.value), 1);
+  const steps = [1, 0.75, 0.5, 0.25, 0];
+  const points = items.map((item, index) => {
+    const x = items.length === 1 ? padX : padX + (index / (items.length - 1)) * (width - padX * 2);
+    const y = padTop + (1 - item.value / max) * (plotBottom - padTop);
+    return { ...item, x, y };
+  });
+  const path = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  const areaPath = points.length > 0
+    ? `${path} L ${points[points.length - 1].x.toFixed(1)} ${plotBottom} L ${points[0].x.toFixed(1)} ${plotBottom} Z`
+    : "";
+
+  return (
+    <section className="panel analytics-card line-analysis-card">
+      <div className="analytics-card-head">
+        <div><span>Análise</span><h2>Evolução de metros perfurados</h2></div>
+        <strong>{items.length} datas</strong>
+      </div>
+      {items.length === 0 ? <p className="muted-text">Sem dados no filtro atual.</p> : null}
+      {items.length > 0 ? (
+        <div className="line-chart-wrap">
+          <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Evolução de metros perfurados">
+            {steps.map((step) => {
+              const y = padTop + (1 - step) * (plotBottom - padTop);
+              return (
+                <g key={step}>
+                  <line x1={padX} x2={width - padX} y1={y} y2={y} />
+                  <text x={padX - 16} y={y + 5}>{shortNumber(max * step)} m</text>
+                </g>
+              );
+            })}
+            <path className="line-area" d={areaPath} />
+            <path className="line-stroke" d={path} />
+            {points.map((point) => <circle key={point.label} cx={point.x} cy={point.y} r="7" />)}
+            {points.map((point, index) => (
+              <text
+                className="line-date"
+                key={`${point.label}-${index}`}
+                x={point.x}
+                y={labelY}
+                textAnchor="start"
+                transform={`rotate(-90 ${point.x} ${labelY})`}
+              >
+                {point.label}
+              </text>
+            ))}
+          </svg>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function OperationalSummary({ summary, recordCount }: { summary: DrillingReportSummary; recordCount: number }) {
+  return (
+    <section className="panel analytics-card operational-summary-card">
+      <div className="analytics-card-head compact-head">
+        <div><span>Destaques</span><h2>Resumo operacional</h2></div>
+      </div>
+      <div className="summary-highlight-list">
+        <div><span>Banco mais produtivo</span><strong>{summary.topBank?.label ?? "-"}</strong><small>{summary.topBank ? metersLabel(summary.topBank.value) : "Sem dados"}</small></div>
+        <div><span>Perfuratriz líder</span><strong>{summary.topMachine?.label ?? "-"}</strong><small>{summary.topMachine ? metersLabel(summary.topMachine.value) : "Sem dados"}</small></div>
+        <div><span>Fichas e furos</span><strong>{recordCount} fichas</strong><small>{summary.totalFuros} furos registrados</small></div>
+      </div>
+    </section>
+  );
+}
+
+function TeamProduction({ items }: { items: ChartItem[] }) {
+  const max = Math.max(...items.map((item) => item.value), 1);
+  return (
+    <section className="panel analytics-card team-production-card">
+      <div className="analytics-card-head">
+        <div><span>Análise</span><h2>Produção por equipe</h2></div>
+        <strong>Top {Math.min(items.length, 4)}</strong>
+      </div>
+      <div className="team-block-grid">
+        {items.length === 0 ? <p className="muted-text">Sem dados no filtro atual.</p> : null}
+        {items.slice(0, 4).map((item, index) => (
+          <div className="team-production-block" key={item.label}>
+            <span>{index + 1}</span>
+            <strong>{item.label || "Não informado"}</strong>
+            <small>{metersLabel(item.value)}</small>
+            <div style={{ "--bar-width": `${Math.max((item.value / max) * 100, 8)}%` } as ChartStyle} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function BankParticipation({ items, total }: { items: ChartItem[]; total: number }) {
+  const first = items[0];
+  const firstPercent = first && total > 0 ? (first.value / total) * 100 : 0;
+
+  return (
+    <section className="panel analytics-card bank-participation-card">
+      <div className="analytics-card-head">
+        <div><span>Análise</span><h2>Participação por banco</h2></div>
+        <strong>{items.length} grupos</strong>
+      </div>
+      <div className="donut-layout">
+        <div className="donut-chart" style={{ "--donut": `${firstPercent * 3.6}deg` } as ChartStyle}>
+          <strong>{shortNumber(total)} m</strong>
+          <span>no período</span>
+        </div>
+        <div className="donut-legend">
+          {items.slice(0, 5).map((item, index) => {
+            const itemPercent = total > 0 ? (item.value / total) * 100 : 0;
+            return (
+              <div key={item.label}>
+                <span className={index === 0 ? "legend-dot green" : "legend-dot gold"} />
+                <strong>{item.label || "Não informado"}</strong>
+                <small>{itemPercent.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</small>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ReportRanking({ title, items }: { title: string; items: ChartItem[] }) {
+  return (
+    <div className="report-ranking-card">
+      <h3>{title}</h3>
+      {items.length === 0 ? <p className="muted-text">Sem dados no período.</p> : null}
+      {items.slice(0, 6).map((item, index) => (
+        <div className="report-ranking-row" key={`${title}-${item.label}`}>
+          <span>{index + 1}</span>
+          <strong>{item.label || "Não informado"}</strong>
+          <small>{metersLabel(item.value)}</small>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function DrillingReportDashboard({ initialData }: Props) {
+  const [data, setData] = useState(initialData);
+  const [error, setError] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  const selected = data.filters;
+  const options = data.options;
+  const loadingLabel = isPending ? "Atualizando..." : "";
+
+  const filterKey = useMemo(() => JSON.stringify(data.filters), [data.filters]);
+
+  function load(filters: DrillingReportFilters) {
+    setError("");
+    startTransition(async () => {
+      try {
+        const params = buildParams(filters);
+        const response = await fetch(`/api/perfuracao/relatorios?${params.toString()}`, {
+          method: "GET",
+          headers: { Accept: "application/json" }
+        });
+        if (!response.ok) throw new Error("Não foi possível atualizar os relatórios.");
+        const nextData = await response.json() as DrillingReportData;
+        setData(nextData);
+        const nextUrl = params.toString() ? `/perfuracao/relatorios?${params.toString()}` : "/perfuracao/relatorios";
+        window.history.replaceState(null, "", nextUrl);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Não foi possível atualizar os relatórios.");
+      }
+    });
+  }
+
+  function submitReport(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    load({ ...selected, ...formFilters(event.currentTarget) });
+  }
+
+  function submitFilters(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    load(formFilters(event.currentTarget));
+  }
+
+  return (
+    <div key={filterKey}>
+      {data.setupWarning ? <section className="form-error">{data.setupWarning}</section> : null}
+      {error ? <section className="form-error">{error}</section> : null}
+      {loadingLabel ? <section className="async-status no-print">{loadingLabel}</section> : null}
+
+      <section className="panel report-generator section-gap no-print">
+        <div>
+          <span className="eyebrow">Prestação de contas</span>
+          <h2>Gerar relatório por período</h2>
+          <p>Escolha o intervalo desejado. O relatório consolidado só aparece depois que uma data for selecionada.</p>
+        </div>
+        <form className="report-period-form" onSubmit={submitReport}>
+          <label>De<input name="inicio" type="date" defaultValue={selected.inicio ?? ""} /></label>
+          <label>Até<input name="fim" type="date" defaultValue={selected.fim ?? ""} /></label>
+          <label>Turno
+            <select name="turno" defaultValue={selected.turno ?? ""}>
+              <option value="">Todos</option>
+              {drillingShiftOptions.map((shift) => <option key={shift.value} value={shift.value}>{shift.label}</option>)}
+            </select>
+          </label>
+          <button type="submit" disabled={isPending}>{isPending ? "Gerando..." : "Gerar relatório"}</button>
+        </form>
+      </section>
+
+      {data.hasReportPeriod ? (
+        <section className="panel consolidated-report print-report-section section-gap">
+          <div className="report-title-row">
+            <div>
+              <span className="eyebrow">Relatório consolidado</span>
+              <h2>Prestação de contas da perfuração</h2>
+              <p>Período: <strong>{data.reportPeriod}</strong></p>
+            </div>
+            <PrintReportButton />
+          </div>
+
+          <div className="report-summary-grid">
+            <div><span>Metros perfurados</span><strong>{metersLabel(data.reportSummary.totalMetros)}</strong></div>
+            <div><span>Média por dia</span><strong>{metersLabel(data.reportSummary.mediaDia)}</strong></div>
+            <div><span>Média por ficha</span><strong>{metersLabel(data.reportSummary.mediaFicha)}</strong></div>
+            <div><span>Média por furo</span><strong>{metersLabel(data.reportSummary.mediaFuro)}</strong></div>
+            <div><span>Equipe melhor</span><strong>{data.reportSummary.topTeam?.label ?? "-"}</strong><small>{data.reportSummary.topTeam ? metersLabel(data.reportSummary.topTeam.value) : "Sem dados"}</small></div>
+            <div><span>Banco mais furado</span><strong>{data.reportSummary.topBank?.label ?? "-"}</strong><small>{data.reportSummary.topBank ? metersLabel(data.reportSummary.topBank.value) : "Sem dados"}</small></div>
+            <div><span>Fichas lançadas</span><strong>{data.reportRecordsCount}</strong></div>
+            <div><span>Total de furos</span><strong>{data.reportSummary.totalFuros}</strong></div>
+          </div>
+
+          <div className="report-details-grid">
+            <ReportRanking title="Equipes no período" items={data.reportSummary.byTeam} />
+            <ReportRanking title="Bancos no período" items={data.reportSummary.byBank} />
+            <ReportRanking title="Perfuratrizes no período" items={data.reportSummary.byMachine} />
+            <ReportRanking title="Atividades no período" items={data.reportSummary.byActivity} />
+          </div>
+        </section>
+      ) : null}
+
+      <form className="panel filters section-gap no-print" onSubmit={submitFilters}>
+        <label>Equipe
+          <select name="equipe" defaultValue={selected.equipe ?? ""}>
+            <option value="">Todas</option>
+            {options.equipes.map((teamName) => <option key={teamName}>{teamName}</option>)}
+          </select>
+        </label>
+        <label>Banco
+          <select name="banco" defaultValue={selected.banco ?? ""}>
+            <option value="">Todos</option>
+            {options.bancos.map((bankName) => <option key={bankName}>{bankName}</option>)}
+          </select>
+        </label>
+        <label>Perfuratriz
+          <select name="perfuratriz" defaultValue={selected.perfuratriz ?? ""}>
+            <option value="">Todas</option>
+            {options.perfuratrizes.map((machineName) => <option key={machineName}>{machineName}</option>)}
+          </select>
+        </label>
+        <label>Atividade
+          <select name="atividade" defaultValue={selected.atividade ?? ""}>
+            <option value="">Todas</option>
+            {options.atividades.map((activityCode) => <option key={activityCode}>{activityCode}</option>)}
+          </select>
+        </label>
+        <label>Turno
+          <select name="turno" defaultValue={selected.turno ?? ""}>
+            <option value="">Todos</option>
+            {drillingShiftOptions.map((shift) => <option key={shift.value} value={shift.value}>{shift.label}</option>)}
+          </select>
+        </label>
+        <label>De<input name="inicio" type="date" defaultValue={selected.inicio ?? ""} /></label>
+        <label>Até<input name="fim" type="date" defaultValue={selected.fim ?? ""} /></label>
+        <button type="submit" disabled={isPending}>{isPending ? "Filtrando..." : "Filtrar gráficos"}</button>
+      </form>
+
+      <section className="analytics-metric-grid section-gap no-print">
+        <MetricCard icon={<Target size={18} />} label="Total perfurado" value={metersLabel(data.filteredSummary.totalMetros)} />
+        <MetricCard icon={<TrendingUp size={18} />} label="Média por dia" value={metersLabel(data.filteredSummary.mediaDia)} />
+        <MetricCard icon={<Gauge size={18} />} label="Média por ficha" value={metersLabel(data.filteredSummary.mediaFicha)} />
+        <MetricCard icon={<BarChart3 size={18} />} label="Média por furo" value={metersLabel(data.filteredSummary.mediaFuro)} />
+        <MetricCard icon={<Award size={18} />} label="Equipe líder" value={data.filteredSummary.topTeam?.label ?? "-"} />
+        <MetricCard icon={<CalendarDays size={18} />} label="Melhor dia" value={data.filteredSummary.bestDay?.label ?? "-"} />
+      </section>
+
+      <section className="analytics-dashboard-grid section-gap no-print">
+        <EvolutionLineChart items={data.filteredSummary.byDate} />
+        <OperationalSummary summary={data.filteredSummary} recordCount={data.recordsCount} />
+        <TeamProduction items={data.filteredSummary.byTeam} />
+        <BankParticipation items={data.filteredSummary.byBank} total={data.filteredSummary.totalMetros} />
+      </section>
+    </div>
+  );
+}

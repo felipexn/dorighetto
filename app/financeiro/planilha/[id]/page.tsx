@@ -1,23 +1,23 @@
-﻿import Link from "next/link";
-import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { EntryType } from "@prisma/client";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { createEntryAction, deleteEntryAction, deleteSheetAction, updateSheetAction } from "@/app/actions";
 import { AppShell } from "@/components/app-shell";
 import { FinancialPrivacyToggle } from "@/components/financial-privacy-toggle";
 import { PrivateValue } from "@/components/private-value";
 import { PageHeader } from "@/components/ui";
-import { createEntryAction, deleteEntryAction, deleteSheetAction, updateSheetAction } from "@/app/actions";
 import { prisma } from "@/lib/prisma";
+import { requireModule } from "@/lib/session";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/format";
-import { requireSession } from "@/lib/session";
+import { toDateInput } from "@/lib/diarias";
 
-type Props = {
-  params: Promise<{ id: string }>;
-};
+type Params = Promise<{ id: string }>;
 
-export default async function PlanilhaPage({ params }: Props) {
-  const session = await requireSession();
+export default async function PlanilhaFinanceiraPage({ params }: { params: Params }) {
+  const session = await requireModule("financeiro");
   const { id } = await params;
+  const canWrite = session.permissions.canWriteFinance;
+
   const sheet = await prisma.financialSheet.findUnique({
     where: { id },
     include: {
@@ -32,17 +32,17 @@ export default async function PlanilhaPage({ params }: Props) {
   const entradas = sheet.entries
     .filter((entry) => entry.type === "ENTRADA")
     .reduce((total, entry) => total + decimalToNumber(entry.value), 0);
-  const saídas = sheet.entries
+  const saidas = sheet.entries
     .filter((entry) => entry.type === "SAIDA")
     .reduce((total, entry) => total + decimalToNumber(entry.value), 0);
-  const isAdmin = session.role === "ADMIN";
+  const saldo = entradas - saidas;
 
   return (
-    <AppShell name={session.name} role={session.role}>
+    <AppShell name={session.name} role={session.role} permissions={session.permissions}>
       <PageHeader
-        eyebrow="Planilha financeira"
+        eyebrow="Financeiro"
         title={sheet.name}
-        description={sheet.purpose ?? "Entradas e saídas desta finalidade."}
+        description={sheet.purpose ?? "Planilha financeira independente."}
         actions={
           <>
             <FinancialPrivacyToggle />
@@ -52,110 +52,68 @@ export default async function PlanilhaPage({ params }: Props) {
       />
 
       <section className="kpi-row">
-        <div className="kpi"><span>Entradas</span><strong><PrivateValue>{formatCurrency(entradas)}</PrivateValue></strong></div>
-        <div className="kpi"><span>Saídas</span><strong><PrivateValue>{formatCurrency(saídas)}</PrivateValue></strong></div>
-        <div className="kpi"><span>Saldo da planilha</span><strong><PrivateValue>{formatCurrency(entradas - saídas)}</PrivateValue></strong></div>
+        <article className="kpi"><span>Entradas</span><strong><PrivateValue>{formatCurrency(entradas)}</PrivateValue></strong></article>
+        <article className="kpi"><span>Saídas</span><strong><PrivateValue>{formatCurrency(saidas)}</PrivateValue></strong></article>
+        <article className="kpi"><span>Saldo</span><strong><PrivateValue>{formatCurrency(saldo)}</PrivateValue></strong></article>
       </section>
 
-      {isAdmin ? (
-        <section className="panel sheet-settings">
-          <div>
-            <span className="eyebrow">Configurações</span>
-            <h2>Editar planilha</h2>
-          </div>
-
-          <form className="sheet-settings-form" action={updateSheetAction}>
+      {canWrite ? (
+        <section className="sheet-settings">
+          <form className="panel sheet-settings-form" action={updateSheetAction}>
             <input type="hidden" name="id" value={sheet.id} />
-            <label>
-              Nome
-              <input name="name" defaultValue={sheet.name} required />
-            </label>
-            <label>
-              Finalidade
-              <input name="purpose" defaultValue={sheet.purpose ?? ""} />
-            </label>
-            <label className="wide-field">
-              Observações
-              <input name="description" defaultValue={sheet.description ?? ""} />
-            </label>
-            <button type="submit"><Save size={18} /> Salvar</button>
+            <label>Nome da planilha<input name="name" defaultValue={sheet.name} required /></label>
+            <label>Finalidade<input name="purpose" defaultValue={sheet.purpose ?? ""} /></label>
+            <label className="wide-field">Observações<textarea name="description" defaultValue={sheet.description ?? ""} rows={3} /></label>
+            <button type="submit">Salvar alterações</button>
           </form>
 
-          <form action={deleteSheetAction} className="delete-zone">
+          <form className="panel delete-zone" action={deleteSheetAction}>
             <input type="hidden" name="id" value={sheet.id} />
             <div>
-              <strong>Deletar planilha</strong>
-              <span>Remove esta planilha e todos os lançamentos dela.</span>
+              <strong>Excluir planilha</strong>
+              <span>Use apenas se tiver certeza. Esta ação remove também os lançamentos.</span>
             </div>
             <button className="danger-button inline-danger" type="submit"><Trash2 size={16} /> Deletar planilha</button>
           </form>
         </section>
       ) : null}
 
-      {isAdmin ? (
+      {canWrite ? (
         <form className="panel entry-form" action={createEntryAction}>
           <input type="hidden" name="sheetId" value={sheet.id} />
-          <label>
-            Data
-            <input name="date" type="date" />
-            <small>Se ficar vazio, será usada a data atual.</small>
-          </label>
-          <label>
-            Tipo
-            <select name="type" defaultValue={EntryType.SAIDA}>
-              <option value={EntryType.SAIDA}>Saída</option>
-              <option value={EntryType.ENTRADA}>Entrada</option>
-            </select>
-          </label>
-          <label>
-            Item
-            <input name="item" placeholder="Descrição do item" required />
-          </label>
-          <label>
-            Qtd
-            <input name="quantity" placeholder="Ex.: 300 L" />
-          </label>
-          <label>
-            Valor
-            <input name="value" placeholder="0,00" required />
-          </label>
-          <label className="wide-field">
-            Observações
-            <input name="notes" placeholder="Opcional" />
-          </label>
-          <button type="submit"><Plus size={18} /> Adicionar</button>
+          <label>Data<input name="date" type="date" defaultValue={toDateInput(new Date())} /></label>
+          <label>Tipo<select name="type" defaultValue="SAIDA"><option value="ENTRADA">Entrada</option><option value="SAIDA">Saída</option></select></label>
+          <label>Descrição<input name="item" placeholder="Ex: combustível" required /></label>
+          <label>Qtd.<input name="quantity" placeholder="Opcional" /></label>
+          <label>Valor<input name="value" placeholder="0,00" required /></label>
+          <label className="wide-field">Observação<input name="notes" placeholder="Opcional" /></label>
+          <button type="submit"><Plus size={18} /> Adicionar lançamento</button>
         </form>
       ) : null}
 
-      <section className="panel table-panel">
+      <section className="panel table-panel section-gap">
         <div className="table-head">
           <h2>Lançamentos</h2>
           <span>{sheet.entries.length} registros</span>
         </div>
-
         <div className="finance-table">
-          <div className="finance-row header">
-            <span>Data</span>
-            <span>Item</span>
-            <span>Qtd</span>
-            <span>Tipo</span>
-            <span>Valor</span>
-            <span></span>
-          </div>
+          <div className="finance-row header"><span>Data</span><span>Descrição</span><span>Tipo</span><span>Qtd.</span><span>Valor</span><span></span></div>
           {sheet.entries.map((entry) => (
             <div className="finance-row" key={entry.id}>
               <span data-label="Data">{formatDate(entry.date)}</span>
-              <span data-label="Item">{entry.item}</span>
-              <span data-label="Qtd">{entry.quantity ?? "-"}</span>
+              <span data-label="Descrição">{entry.item}{entry.notes ? <small> {entry.notes}</small> : null}</span>
               <span data-label="Tipo" className={entry.type === "ENTRADA" ? "tag income" : "tag expense"}>{entry.type}</span>
+              <span data-label="Qtd.">{entry.quantity ?? "-"}</span>
               <strong data-label="Valor"><PrivateValue>{formatCurrency(decimalToNumber(entry.value))}</PrivateValue></strong>
-              {isAdmin ? (
-                <form className="finance-row-action" action={deleteEntryAction}>
-                  <input type="hidden" name="id" value={entry.id} />
-                  <input type="hidden" name="sheetId" value={sheet.id} />
-                  <button className="icon-danger" type="submit" aria-label="Deletar lançamento"><Trash2 size={16} /></button>
-                </form>
-              ) : <span className="finance-row-action" />}
+              <span className="finance-row-action" data-label="Ações">
+                {canWrite ? (
+                  <form action={deleteEntryAction}>
+                    <input type="hidden" name="id" value={entry.id} />
+                    <input type="hidden" name="sheetId" value={sheet.id} />
+                    <button className="icon-danger" type="submit" aria-label="Excluir lançamento"><Trash2 size={16} /></button>
+                  </form>
+                ) : null}
+              </span>
             </div>
           ))}
         </div>
@@ -163,6 +121,3 @@ export default async function PlanilhaPage({ params }: Props) {
     </AppShell>
   );
 }
-
-
-

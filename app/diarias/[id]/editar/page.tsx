@@ -1,11 +1,11 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { ArrowLeft, Save } from "lucide-react";
 import { notFound } from "next/navigation";
 import { updateDailyEntryAction } from "@/app/actions";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/session";
+import { requireModuleWrite } from "@/lib/session";
 import { decimalToNumber } from "@/lib/format";
 import { toDateInput } from "@/lib/diarias";
 
@@ -14,7 +14,7 @@ type Props = {
 };
 
 export default async function EditarDiariaPage({ params }: Props) {
-  const session = await requireAdmin();
+  const session = await requireModuleWrite("diarias");
   const { id } = await params;
 
   const [entry, employees] = await Promise.all([
@@ -29,7 +29,7 @@ export default async function EditarDiariaPage({ params }: Props) {
   if (!entry || entry.status !== "PENDENTE") notFound();
 
   return (
-    <AppShell active="diarias" name={session.name} role={session.role}>
+    <AppShell active="diarias" name={session.name} role={session.role} permissions={session.permissions}>
       <PageHeader
         eyebrow="Editar diária"
         title={entry.employeeName}

@@ -1,11 +1,11 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { ArrowLeft, Download } from "lucide-react";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
-import { requireSession } from "@/lib/session";
+import { requireModule } from "@/lib/session";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/format";
 import { ensurePayrollSchema } from "@/lib/payroll-schema";
 
@@ -14,7 +14,7 @@ type Props = {
 };
 
 export default async function FechamentoPage({ params }: Props) {
-  const session = await requireSession();
+  const session = await requireModule("diarias");
   const { id } = await params;
 
   await ensurePayrollSchema(prisma);
@@ -32,7 +32,7 @@ export default async function FechamentoPage({ params }: Props) {
   const grossTotal = closure.totalDaily.add(closure.totalOvertime);
 
   return (
-    <AppShell active="diarias" name={session.name} role={session.role}>
+    <AppShell active="diarias" name={session.name} role={session.role} permissions={session.permissions}>
       <PageHeader
         eyebrow="Recibo"
         title={`Recibo ${closure.receiptNumber}`}

@@ -1,11 +1,11 @@
-﻿import { BarChart3, ChevronDown, Pencil, Trash2 } from "lucide-react";
+import { BarChart3, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/ui";
 import { PerfuracaoFormFields } from "@/components/perfuracao-form";
 import { createDrillingRecordAction, deleteDrillingRecordAction } from "@/app/actions";
 import { prisma } from "@/lib/prisma";
-import { requireSession } from "@/lib/session";
+import { requireModule } from "@/lib/session";
 import { ensureDrillingSchema } from "@/lib/drilling-schema";
 import { decimalToNumber, formatDate } from "@/lib/format";
 import { toDateInput } from "@/lib/diarias";
@@ -36,9 +36,9 @@ type SearchParams = Promise<{
 }>;
 
 export default async function PerfuracaoPage({ searchParams }: { searchParams: SearchParams }) {
-  const session = await requireSession();
+  const session = await requireModule("perfuracao");
   const params = await searchParams;
-  const isAdmin = session.role === "ADMIN";
+  const canWrite = session.permissions.canWriteDrilling;
   const actionError = params.erro ? decodeURIComponent(params.erro) : "";
 
 
@@ -149,7 +149,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
   const selectedShift = normalizeDrillingShift(params.prefillTurno ?? "DIA");
 
   return (
-    <AppShell active="perfuracao" name={session.name} role={session.role}>
+    <AppShell active="perfuracao" name={session.name} role={session.role} permissions={session.permissions}>
       <PageHeader
         eyebrow="Perfuração"
         title="Ficha de perfuração"
@@ -158,7 +158,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
       />
       {actionError ? <section className="form-error">{actionError}</section> : null}
       {setupWarning ? <section className="form-error">{setupWarning}</section> : null}
-      {isAdmin && quickTeams.length > 0 ? (
+      {canWrite && quickTeams.length > 0 ? (
         <section className="panel section-gap">
           <div className="table-head">
             <h2>Continuar equipe existente</h2>
@@ -179,7 +179,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
       ) : null}
 
 
-      {isAdmin && !setupWarning ? (
+      {canWrite && !setupWarning ? (
         <form className="panel perf-form" action={createDrillingRecordAction}>
           <label>Data<input name="date" type="date" defaultValue={toDateInput(new Date())} /></label>
           <label>Equipe
@@ -276,7 +276,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
                       ) : null}
 
                       {record.notes ? <p>{record.notes}</p> : null}
-                      {isAdmin ? (
+                      {canWrite ? (
                         <div className="drill-card-actions">
                           <Link className="button secondary compact" href={`/perfuracao/${record.id}/editar`}><Pencil size={16} /> Editar</Link>
                           <form action={deleteDrillingRecordAction}>

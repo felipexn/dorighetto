@@ -1,6 +1,7 @@
 ﻿import path from "node:path";
 import { NextResponse } from "next/server";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/format";
+import { requireModule } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -103,6 +104,7 @@ function drawHeader(doc: PdfDoc, closure: { receiptNumber: string }) {
 }
 
 export async function GET(_: Request, { params }: Props) {
+  await requireModule("diarias");
   const { prisma } = await import("@/lib/prisma");
   const { ensurePayrollSchema } = await import("@/lib/payroll-schema");
   const PDFDocument = (await import("pdfkit")).default;
