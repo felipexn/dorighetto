@@ -16,6 +16,7 @@ export async function GET(request: Request) {
     perfuratriz: searchParams.get("perfuratriz") || undefined,
     atividade: searchParams.get("atividade") || undefined,
     turno: searchParams.get("turno") || undefined,
+    parada: searchParams.get("parada") || undefined,
     inicio: searchParams.get("inicio") || undefined,
     fim: searchParams.get("fim") || undefined
   };

@@ -2,11 +2,11 @@
 
 import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { useMemo, useState, useTransition } from "react";
-import { Award, BarChart3, CalendarDays, Gauge, Target, TrendingUp } from "lucide-react";
+import { Award, BarChart3, CalendarDays, Clock, Gauge, Target, TrendingUp } from "lucide-react";
 import { PrintReportButton } from "@/components/print-report-button";
 import { drillingShiftOptions } from "@/lib/drilling";
 import type { ChartItem, DrillingReportData, DrillingReportFilters, DrillingReportSummary } from "@/lib/drilling-report-data";
-import { metersLabel, shortNumber } from "@/lib/drilling-report-data";
+import { hoursLabel, metersLabel, shortNumber } from "@/lib/drilling-report-data";
 
 type ChartStyle = CSSProperties & {
   "--bar-width"?: string;
@@ -34,6 +34,7 @@ function formFilters(form: HTMLFormElement): DrillingReportFilters {
     perfuratriz: read("perfuratriz"),
     atividade: read("atividade"),
     turno: read("turno"),
+    parada: read("parada"),
     inicio: read("inicio"),
     fim: read("fim")
   };
@@ -147,28 +148,46 @@ function TeamProduction({ items }: { items: ChartItem[] }) {
   );
 }
 
+const donutColors = ["#276a4a", "#d39224", "#8f5b13", "#5d7461", "#c46f35", "#1f4f3a"];
+
+function buildDonutGradient(items: ChartItem[], total: number) {
+  if (items.length === 0 || total <= 0) return "#e5ded1 0deg 360deg";
+
+  let current = 0;
+  const segments = items.slice(0, donutColors.length).map((item, index) => {
+    const start = current;
+    current += (item.value / total) * 360;
+    return `${donutColors[index % donutColors.length]} ${start.toFixed(2)}deg ${current.toFixed(2)}deg`;
+  });
+
+  if (current < 360) {
+    segments.push(`#e5ded1 ${current.toFixed(2)}deg 360deg`);
+  }
+
+  return segments.join(", ");
+}
+
 function BankParticipation({ items, total }: { items: ChartItem[]; total: number }) {
-  const first = items[0];
-  const firstPercent = first && total > 0 ? (first.value / total) * 100 : 0;
+  const donutGradient = buildDonutGradient(items, total);
 
   return (
     <section className="panel analytics-card bank-participation-card">
       <div className="analytics-card-head">
-        <div><span>Análise</span><h2>Participação por banco</h2></div>
+        <div><span>An?lise</span><h2>Participa??o por banco</h2></div>
         <strong>{items.length} grupos</strong>
       </div>
       <div className="donut-layout">
-        <div className="donut-chart" style={{ "--donut": `${firstPercent * 3.6}deg` } as ChartStyle}>
+        <div className="donut-chart" style={{ "--donut": donutGradient } as ChartStyle}>
           <strong>{shortNumber(total)} m</strong>
-          <span>no período</span>
+          <span>no per?odo</span>
         </div>
         <div className="donut-legend">
-          {items.slice(0, 5).map((item, index) => {
+          {items.slice(0, donutColors.length).map((item, index) => {
             const itemPercent = total > 0 ? (item.value / total) * 100 : 0;
             return (
               <div key={item.label}>
-                <span className={index === 0 ? "legend-dot green" : "legend-dot gold"} />
-                <strong>{item.label || "Não informado"}</strong>
+                <span className="legend-dot" style={{ background: donutColors[index % donutColors.length] }} />
+                <strong>{item.label || "N?o informado"}</strong>
                 <small>{itemPercent.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</small>
               </div>
             );
@@ -179,7 +198,7 @@ function BankParticipation({ items, total }: { items: ChartItem[]; total: number
   );
 }
 
-function ReportRanking({ title, items }: { title: string; items: ChartItem[] }) {
+function ReportRanking({ title, items, valueLabel = metersLabel }: { title: string; items: ChartItem[]; valueLabel?: (value: number) => string }) {
   return (
     <div className="report-ranking-card">
       <h3>{title}</h3>
@@ -188,7 +207,7 @@ function ReportRanking({ title, items }: { title: string; items: ChartItem[] }) 
         <div className="report-ranking-row" key={`${title}-${item.label}`}>
           <span>{index + 1}</span>
           <strong>{item.label || "Não informado"}</strong>
-          <small>{metersLabel(item.value)}</small>
+          <small>{valueLabel(item.value)}</small>
         </div>
       ))}
     </div>
@@ -228,7 +247,8 @@ export function DrillingReportDashboard({ initialData }: Props) {
 
   function submitReport(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    load({ ...selected, ...formFilters(event.currentTarget) });
+    const filters = formFilters(event.currentTarget);
+    load({ inicio: filters.inicio, fim: filters.fim, turno: filters.turno });
   }
 
   function submitFilters(event: FormEvent<HTMLFormElement>) {
@@ -277,6 +297,9 @@ export function DrillingReportDashboard({ initialData }: Props) {
             <div><span>Média por dia</span><strong>{metersLabel(data.reportSummary.mediaDia)}</strong></div>
             <div><span>Média por ficha</span><strong>{metersLabel(data.reportSummary.mediaFicha)}</strong></div>
             <div><span>Média por furo</span><strong>{metersLabel(data.reportSummary.mediaFuro)}</strong></div>
+            <div><span>Horas paradas</span><strong>{hoursLabel(data.reportSummary.totalHorasParadas)}</strong></div>
+            <div><span>Média de parada/ficha</span><strong>{hoursLabel(data.reportSummary.mediaHorasParadasFicha)}</strong></div>
+            <div><span>Principal motivo de parada</span><strong>{data.reportSummary.topDowntimeReason?.label ?? "-"}</strong><small>{data.reportSummary.topDowntimeReason ? hoursLabel(data.reportSummary.topDowntimeReason.value) : "Sem dados"}</small></div>
             <div><span>Equipe melhor</span><strong>{data.reportSummary.topTeam?.label ?? "-"}</strong><small>{data.reportSummary.topTeam ? metersLabel(data.reportSummary.topTeam.value) : "Sem dados"}</small></div>
             <div><span>Banco mais furado</span><strong>{data.reportSummary.topBank?.label ?? "-"}</strong><small>{data.reportSummary.topBank ? metersLabel(data.reportSummary.topBank.value) : "Sem dados"}</small></div>
             <div><span>Fichas lançadas</span><strong>{data.reportRecordsCount}</strong></div>
@@ -288,6 +311,8 @@ export function DrillingReportDashboard({ initialData }: Props) {
             <ReportRanking title="Bancos no período" items={data.reportSummary.byBank} />
             <ReportRanking title="Perfuratrizes no período" items={data.reportSummary.byMachine} />
             <ReportRanking title="Atividades no período" items={data.reportSummary.byActivity} />
+            <ReportRanking title="Paradas por motivo" items={data.reportSummary.byDowntimeReason} valueLabel={hoursLabel} />
+            <ReportRanking title="Equipes com horas paradas" items={data.reportSummary.downtimeByTeam} valueLabel={hoursLabel} />
           </div>
         </section>
       ) : null}
@@ -323,6 +348,12 @@ export function DrillingReportDashboard({ initialData }: Props) {
             {drillingShiftOptions.map((shift) => <option key={shift.value} value={shift.value}>{shift.label}</option>)}
           </select>
         </label>
+        <label>Motivo da parada
+          <select name="parada" defaultValue={selected.parada ?? ""}>
+            <option value="">Todos</option>
+            {options.paradas.map((reason) => <option key={reason}>{reason}</option>)}
+          </select>
+        </label>
         <label>De<input name="inicio" type="date" defaultValue={selected.inicio ?? ""} /></label>
         <label>Até<input name="fim" type="date" defaultValue={selected.fim ?? ""} /></label>
         <button type="submit" disabled={isPending}>{isPending ? "Filtrando..." : "Filtrar gráficos"}</button>
@@ -333,6 +364,7 @@ export function DrillingReportDashboard({ initialData }: Props) {
         <MetricCard icon={<TrendingUp size={18} />} label="Média por dia" value={metersLabel(data.filteredSummary.mediaDia)} />
         <MetricCard icon={<Gauge size={18} />} label="Média por ficha" value={metersLabel(data.filteredSummary.mediaFicha)} />
         <MetricCard icon={<BarChart3 size={18} />} label="Média por furo" value={metersLabel(data.filteredSummary.mediaFuro)} />
+        <MetricCard icon={<Clock size={18} />} label="Horas paradas" value={hoursLabel(data.filteredSummary.totalHorasParadas)} />
         <MetricCard icon={<Award size={18} />} label="Equipe líder" value={data.filteredSummary.topTeam?.label ?? "-"} />
         <MetricCard icon={<CalendarDays size={18} />} label="Melhor dia" value={data.filteredSummary.bestDay?.label ?? "-"} />
       </section>

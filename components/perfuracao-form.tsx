@@ -43,15 +43,17 @@ function blankDowntime(key = newHoleKey()): DowntimeInput {
   return { key, hours: "", reason: "", otherReason: "" };
 }
 
-function numericHoleCode(value: string) {
-  return value.replace(/^F/i, "").replace(/\D/g, "");
+function normalizeHoleInput(value: string) {
+  const raw = value.trim().toUpperCase();
+  if (raw === "AUX") return "AUX";
+  return raw.replace(/^F/i, "").replace(/\D/g, "");
 }
 
 function buildInitialHoles(initialHoles: InitialHoleInput[] = []) {
   const rows = initialHoles.length > 0
     ? initialHoles.map((hole, index) => ({
         key: `initial-${index}`,
-        code: numericHoleCode(hole.code),
+        code: normalizeHoleInput(hole.code),
         meters: hole.meters
       }))
     : [blankHole("new-0")];
@@ -91,7 +93,7 @@ export function PerfuracaoFormFields({
   const wasPendingRef = useRef(false);
 
   function updateHole(key: string, field: "code" | "meters", value: string) {
-    const fieldValue = field === "code" ? numericHoleCode(value) : value;
+    const fieldValue = field === "code" ? normalizeHoleInput(value) : value;
     setHoles((current) => {
       const updated = current.map((item) => (item.key === key ? { ...item, [field]: fieldValue } : item));
       const last = updated[updated.length - 1];
@@ -268,12 +270,10 @@ export function PerfuracaoFormFields({
           <label>
             ID do furo
             <span className="hole-code-control">
-              <span>F</span>
               <input
                 name="holeCode"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                placeholder={`${index + 1}`}
+                inputMode="text"
+                placeholder={`F${index + 1} ou AUX`}
                 value={hole.code}
                 data-hole-field="code"
                 data-hole-index={index}

@@ -19,7 +19,10 @@ function drillingFormError(path: string, message: string): never {
 }
 
 function normalizeDrillingHoleCode(value: string) {
-  const digits = value.trim().replace(/^F/i, "").replace(/\D/g, "");
+  const raw = value.trim().toUpperCase();
+  if (raw === "AUX") return "AUX";
+
+  const digits = raw.replace(/^F/i, "").replace(/\D/g, "");
   return digits ? `F${digits}` : "";
 }
 
