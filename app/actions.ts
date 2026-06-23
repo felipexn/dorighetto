@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import bcrypt from "bcryptjs";
 import { EntryType, Prisma, type UserRole } from "@prisma/client";
@@ -52,11 +52,11 @@ function readDrillingDowntimes(formData: FormData, errorPath: string) {
     try {
       hours = parseDecimal(item.hours);
     } catch {
-      drillingFormError(errorPath, `Horas invÃƒÂ¡lidas para a parada ${item.reason}.`);
+      drillingFormError(errorPath, `Horas inválidas para a parada ${item.reason}.`);
     }
 
     if (hours.lte(0)) {
-      drillingFormError(errorPath, `Horas invÃƒÂ¡lidas para a parada ${item.reason}.`);
+      drillingFormError(errorPath, `Horas inválidas para a parada ${item.reason}.`);
     }
 
     return {
@@ -85,7 +85,7 @@ function readDrillingHoles(formData: FormData, errorPath: string, notes: string,
   }
 
   if (pairs.length === 0 && !notes && !hasDowntime) {
-    drillingFormError(errorPath, "Adicione pelo menos um furo com ID e metragem, uma parada ou preencha a observaÃƒÂ§ÃƒÂ£o.");
+    drillingFormError(errorPath, "Adicione pelo menos um furo com ID e metragem, uma parada ou preencha a observação.");
   }
 
   return pairs.map((item) => {
@@ -93,11 +93,11 @@ function readDrillingHoles(formData: FormData, errorPath: string, notes: string,
     try {
       meters = parseDecimal(item.meters);
     } catch {
-      drillingFormError(errorPath, `Metragem invÃƒÂ¡lida para o furo ${item.code}.`);
+      drillingFormError(errorPath, `Metragem inválida para o furo ${item.code}.`);
     }
 
     if (meters.lte(0)) {
-      drillingFormError(errorPath, `Metragem invÃƒÂ¡lida para o furo ${item.code}.`);
+      drillingFormError(errorPath, `Metragem inválida para o furo ${item.code}.`);
     }
 
     return {
@@ -360,7 +360,7 @@ export async function payFortnightAction(formData: FormData) {
     });
 
     if (entries.length === 0) {
-      throw new Error("NÃƒÂ£o existem diÃƒÂ¡rias pendentes para este funcionÃƒÂ¡rio.");
+      throw new Error("Não existem diárias pendentes para este funcionário.");
     }
 
     const start = entries[0].date;
@@ -446,7 +446,7 @@ export async function createDrillingRecordAction(formData: FormData) {
       }
     });
   } catch {
-    redirect("/perfuracao?erro=NÃƒÂ£o%20foi%20possÃƒÂ­vel%20salvar.%20Sincronize%20o%20schema%20do%20banco%20e%20tente%20novamente.");
+    redirect(`/perfuracao?erro=${encodeURIComponent("Não foi possível salvar. Sincronize o schema do banco e tente novamente.")}`);
   }
 
   revalidatePath("/perfuracao");
@@ -503,7 +503,7 @@ export async function updateDrillingRecordAction(formData: FormData) {
       }
     });
   } catch {
-    drillingFormError(errorPath, "NÃƒÂ£o foi possÃƒÂ­vel atualizar a ficha. Sincronize o schema do banco e tente novamente.");
+    drillingFormError(errorPath, "Não foi possível atualizar a ficha. Sincronize o schema do banco e tente novamente.");
   }
 
   revalidatePath("/perfuracao");
@@ -628,3 +628,4 @@ export async function deleteUserAction(formData: FormData) {
   await prisma.user.delete({ where: { id } });
   revalidatePath("/usuarios");
 }
+

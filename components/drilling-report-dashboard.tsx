@@ -173,13 +173,13 @@ function BankParticipation({ items, total }: { items: ChartItem[]; total: number
   return (
     <section className="panel analytics-card bank-participation-card">
       <div className="analytics-card-head">
-        <div><span>An?lise</span><h2>Participa??o por banco</h2></div>
+        <div><span>Análise</span><h2>Participação por banco</h2></div>
         <strong>{items.length} grupos</strong>
       </div>
       <div className="donut-layout">
         <div className="donut-chart" style={{ "--donut": donutGradient } as ChartStyle}>
           <strong>{shortNumber(total)} m</strong>
-          <span>no per?odo</span>
+          <span>no período</span>
         </div>
         <div className="donut-legend">
           {items.slice(0, donutColors.length).map((item, index) => {
@@ -187,7 +187,7 @@ function BankParticipation({ items, total }: { items: ChartItem[]; total: number
             return (
               <div key={item.label}>
                 <span className="legend-dot" style={{ background: donutColors[index % donutColors.length] }} />
-                <strong>{item.label || "N?o informado"}</strong>
+                <strong>{item.label || "Não informado"}</strong>
                 <small>{itemPercent.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</small>
               </div>
             );
@@ -378,3 +378,4 @@ export function DrillingReportDashboard({ initialData }: Props) {
     </div>
   );
 }
+
