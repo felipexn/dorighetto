@@ -1,7 +1,7 @@
 ﻿"use server";
 
 import bcrypt from "bcryptjs";
-import { EntryType, Prisma, type UserRole } from "@prisma/client";
+import { EntryType, Prisma, type DailyRole, type EmployeeType, type UserRole } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -213,28 +213,181 @@ export async function deleteEntryAction(formData: FormData) {
   revalidatePath(`/financeiro/planilha/${sheetId}`);
 }
 
-export async function createDailyEntryAction(formData: FormData) {
-  await requireModuleWrite("diarias");
 
+function readDailyRole(formData: FormData): DailyRole {
+  const role = requiredText(formData, "role") as DailyRole;
+  if (role !== "AJUDANTE" && role !== "OPERADOR") {
+    throw new Error("Função inv?lida.");
+  }
+  return role;
+}
+
+function readEmployeeType(formData: FormData): EmployeeType {
+  return String(formData.get("employeeType") ?? "DIARISTA") === "FICHADO" ? "FICHADO" : "DIARISTA";
+}
+
+function optionalDecimal(value: FormDataEntryValue | null) {
+  const raw = String(value ?? "").trim();
+  return raw ? parseDecimal(raw) : null;
+}
+
+async function findPayrollEmployee(employeeName: string) {
+  await ensurePayrollSchema(prisma);
+  return prisma.payrollEmployee.findUnique({ where: { name: employeeName } });
+}
+
+async function buildDailyEntryData(formData: FormData) {
   const date = requiredText(formData, "date");
-  const dailyValue = parseDecimal(formData.get("dailyValue"));
+  const employeeName = requiredText(formData, "employeeName").toUpperCase();
+  const employee = await findPayrollEmployee(employeeName);
+  const requestedType = readEmployeeType(formData);
   const overtimeHours = parseDecimal(formData.get("overtimeHours"));
-  const overtimeRate = dailyValue.div(8);
-  const overtimeTotal = overtimeHours.mul(overtimeRate);
-  const dayTotal = dailyValue.add(overtimeTotal);
+  const enteredOvertimeRate = optionalDecimal(formData.get("overtimeRate"));
+  const notes = String(formData.get("notes") ?? "").trim() || null;
 
-  await prisma.dailyEntry.create({
-    data: {
+  if (employee?.type === "FICHADO" || requestedType === "FICHADO") {
+    if (!employee || employee.type !== "FICHADO") {
+      throw new Error("Cadastre o funcionário fichado antes de lançar horas extras.");
+    }
+
+    const overtimeRate = enteredOvertimeRate ?? employee.defaultOvertimeRate ?? new Prisma.Decimal(0);
+    if (overtimeHours.lte(0)) {
+      throw new Error("Informe a quantidade de horas extras do funcionário fichado.");
+    }
+    if (overtimeRate.lte(0)) {
+      throw new Error("Informe o valor da hora extra do funcionário fichado.");
+    }
+
+    const overtimeTotal = overtimeHours.mul(overtimeRate);
+    return {
       date: new Date(`${date}T00:00:00.000Z`),
-      employeeName: requiredText(formData, "employeeName").toUpperCase(),
-      role: requiredText(formData, "role") as "AJUDANTE" | "OPERADOR",
-      dailyValue,
+      employeeName,
+      employeeId: employee.id,
+      role: employee.role,
+      employeeType: "FICHADO" as EmployeeType,
+      monthlySalary: employee.monthlySalary,
+      dailyValue: new Prisma.Decimal(0),
       overtimeHours,
       overtimeRate,
       overtimeTotal,
-      dayTotal,
-      notes: String(formData.get("notes") ?? "").trim() || null
+      dayTotal: overtimeTotal,
+      notes
+    };
+  }
+
+  const dailyValue = optionalDecimal(formData.get("dailyValue"));
+  if (!dailyValue || dailyValue.lte(0)) {
+    throw new Error("Informe o valor da diária do funcionário diarista.");
+  }
+
+  const role = readDailyRole(formData);
+  const overtimeRate = enteredOvertimeRate ?? dailyValue.div(8);
+  const overtimeTotal = overtimeHours.mul(overtimeRate);
+  const dayTotal = dailyValue.add(overtimeTotal);
+
+  return {
+    date: new Date(`${date}T00:00:00.000Z`),
+    employeeName,
+    employeeId: employee?.id ?? null,
+    role,
+    employeeType: "DIARISTA" as EmployeeType,
+    monthlySalary: null,
+    dailyValue,
+    overtimeHours,
+    overtimeRate,
+    overtimeTotal,
+    dayTotal,
+    notes
+  };
+}
+
+export async function createPayrollEmployeeAction(formData: FormData) {
+  await requireModuleWrite("diarias");
+  await ensurePayrollSchema(prisma);
+
+  const name = requiredText(formData, "name").toUpperCase();
+  const role = readDailyRole(formData);
+  const monthlySalary = optionalDecimal(formData.get("monthlySalary"));
+  const defaultOvertimeRate = optionalDecimal(formData.get("defaultOvertimeRate"));
+
+  if (!monthlySalary || monthlySalary.lte(0)) {
+    throw new Error("Informe o salário mensal de referência do funcionário fichado.");
+  }
+
+  await prisma.payrollEmployee.upsert({
+    where: { name },
+    create: {
+      name,
+      role,
+      type: "FICHADO",
+      dailyValue: null,
+      monthlySalary,
+      defaultOvertimeRate,
+      isActive: true
+    },
+    update: {
+      role,
+      type: "FICHADO",
+      dailyValue: null,
+      monthlySalary,
+      defaultOvertimeRate,
+      isActive: true
     }
+  });
+
+  revalidatePath("/diarias");
+}
+
+export async function updatePayrollEmployeeAction(formData: FormData) {
+  await requireModuleWrite("diarias");
+  await ensurePayrollSchema(prisma);
+
+  const id = requiredText(formData, "id");
+  const name = requiredText(formData, "name").toUpperCase();
+  const role = readDailyRole(formData);
+  const monthlySalary = optionalDecimal(formData.get("monthlySalary"));
+  const defaultOvertimeRate = optionalDecimal(formData.get("defaultOvertimeRate"));
+
+  await prisma.payrollEmployee.update({
+    where: { id },
+    data: {
+      name,
+      role,
+      type: "FICHADO",
+      dailyValue: null,
+      monthlySalary,
+      defaultOvertimeRate,
+      isActive: true
+    }
+  });
+
+  await prisma.dailyEntry.updateMany({
+    where: { employeeId: id, status: "PENDENTE" },
+    data: { employeeName: name, role, employeeType: "FICHADO", monthlySalary }
+  });
+
+  revalidatePath("/diarias");
+}
+
+export async function deletePayrollEmployeeAction(formData: FormData) {
+  await requireModuleWrite("diarias");
+  await ensurePayrollSchema(prisma);
+
+  const id = requiredText(formData, "id");
+  await prisma.payrollEmployee.update({
+    where: { id },
+    data: { isActive: false }
+  });
+
+  revalidatePath("/diarias");
+}
+
+export async function createDailyEntryAction(formData: FormData) {
+  await requireModuleWrite("diarias");
+  await ensurePayrollSchema(prisma);
+
+  await prisma.dailyEntry.create({
+    data: await buildDailyEntryData(formData)
   });
 
   revalidatePath("/diarias");
@@ -256,35 +409,65 @@ export async function deleteDailyEntryAction(formData: FormData) {
 
 export async function updateDailyEntryAction(formData: FormData) {
   await requireModuleWrite("diarias");
+  await ensurePayrollSchema(prisma);
 
   const id = requiredText(formData, "id");
-  const date = requiredText(formData, "date");
-  const dailyValue = parseDecimal(formData.get("dailyValue"));
-  const overtimeHours = parseDecimal(formData.get("overtimeHours"));
-  const overtimeRate = dailyValue.div(8);
-  const overtimeTotal = overtimeHours.mul(overtimeRate);
-  const dayTotal = dailyValue.add(overtimeTotal);
 
   await prisma.dailyEntry.update({
     where: {
       id,
       status: "PENDENTE"
     },
-    data: {
-      date: new Date(`${date}T00:00:00.000Z`),
-      employeeName: requiredText(formData, "employeeName").toUpperCase(),
-      role: requiredText(formData, "role") as "AJUDANTE" | "OPERADOR",
-      dailyValue,
-      overtimeHours,
-      overtimeRate,
-      overtimeTotal,
-      dayTotal,
-      notes: String(formData.get("notes") ?? "").trim() || null
-    }
+    data: await buildDailyEntryData(formData)
   });
 
   revalidatePath("/diarias");
   redirect("/diarias?funcionario=&funcao=&status=PENDENTE");
+}
+
+export async function addPayrollAdditionAction(formData: FormData) {
+  await requireModuleWrite("diarias");
+  await ensurePayrollSchema(prisma);
+
+  const employeeName = requiredText(formData, "employeeName").toUpperCase();
+  const amount = parseDecimal(formData.get("amount"));
+  const notes = requiredText(formData, "notes");
+
+  if (amount.lte(0)) {
+    throw new Error("Informe um valor de acr?scimo maior que zero.");
+  }
+
+  await prisma.payrollAddition.create({
+    data: {
+      employeeName,
+      amount,
+      notes
+    }
+  });
+
+  revalidatePath("/diarias");
+  revalidatePath(`/diarias/pagamento/${encodeURIComponent(employeeName)}`);
+  redirect(`/diarias/pagamento/${encodeURIComponent(employeeName)}`);
+}
+
+export async function deletePayrollAdditionAction(formData: FormData) {
+  await requireModuleWrite("diarias");
+  await ensurePayrollSchema(prisma);
+
+  const id = requiredText(formData, "id");
+  const employeeName = requiredText(formData, "employeeName").toUpperCase();
+
+  await prisma.payrollAddition.deleteMany({
+    where: {
+      id,
+      employeeName,
+      status: "PENDENTE"
+    }
+  });
+
+  revalidatePath("/diarias");
+  revalidatePath(`/diarias/pagamento/${encodeURIComponent(employeeName)}`);
+  redirect(`/diarias/pagamento/${encodeURIComponent(employeeName)}`);
 }
 
 export async function addPayrollAdvanceAction(formData: FormData) {
@@ -359,6 +542,16 @@ export async function payFortnightAction(formData: FormData) {
       }
     });
 
+    const additions = await tx.payrollAddition.findMany({
+      where: {
+        employeeName,
+        status: "PENDENTE"
+      },
+      orderBy: {
+        createdAt: "asc"
+      }
+    });
+
     if (entries.length === 0) {
       throw new Error("Não existem diárias pendentes para este funcionário.");
     }
@@ -369,18 +562,21 @@ export async function payFortnightAction(formData: FormData) {
     const totalOvertime = entries.reduce((total, entry) => total.add(entry.overtimeTotal), new Prisma.Decimal(0));
     const totalGross = entries.reduce((total, entry) => total.add(entry.dayTotal), new Prisma.Decimal(0));
     const totalAdvance = advances.reduce((total, advance) => total.add(advance.amount), new Prisma.Decimal(0));
-    const totalPaid = totalGross.sub(totalAdvance);
+    const totalAddition = additions.reduce((total, addition) => total.add(addition.amount), new Prisma.Decimal(0));
+    const totalPaid = totalGross.add(totalAddition).sub(totalAdvance);
 
     const created = await tx.payrollClosure.create({
       data: {
         employeeName,
         role: entries[0].role,
+        employeeType: entries[0].employeeType,
         periodStart: start,
         periodEnd: end,
         daysWorked: entries.length,
         totalDaily,
         totalOvertime,
         totalAdvance,
+        totalAddition,
         totalPaid,
         receiptNumber: makeReceiptNumber()
       }
@@ -407,6 +603,20 @@ export async function payFortnightAction(formData: FormData) {
         },
         data: {
           status: "DESCONTADO",
+          closureId: created.id
+        }
+      });
+    }
+
+    if (additions.length > 0) {
+      await tx.payrollAddition.updateMany({
+        where: {
+          id: {
+            in: additions.map((addition) => addition.id)
+          }
+        },
+        data: {
+          status: "INCLUIDO",
           closureId: created.id
         }
       });

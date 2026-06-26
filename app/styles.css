@@ -861,15 +861,97 @@ textarea:focus {
   margin-bottom: 16px;
 }
 
+.payment-entry-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.75fr);
+  gap: 16px;
+}
+
 .daily-form {
   display: grid;
-  grid-template-columns: 150px 1fr 150px 130px 110px;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
   gap: 14px;
   align-items: end;
 }
 
+.form-section-title {
+  display: grid;
+  gap: 6px;
+  align-self: start;
+}
+
+.form-section-title h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.form-section-title p {
+  margin: 0;
+  color: var(--muted);
+}
+
 .wide-field {
   grid-column: span 2;
+}
+
+.employee-register-panel {
+  align-self: start;
+}
+
+.employee-register-panel > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.employee-register-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.employee-register-panel > summary div {
+  display: grid;
+  gap: 5px;
+}
+
+.employee-register-panel > summary strong {
+  font-size: 20px;
+}
+
+.employee-register-panel > summary small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.employee-register-panel > summary svg {
+  color: var(--brand-dark);
+  flex: 0 0 auto;
+}
+
+.employee-register-panel .employee-register-form {
+  margin-top: 18px;
+}
+
+.payroll-reference-card {
+  min-height: 48px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  display: grid;
+  gap: 2px;
+}
+
+.payroll-reference-card span,
+.payroll-reference-card small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.payroll-reference-card strong {
+  font-size: 15px;
 }
 
 .table-panel {
@@ -936,6 +1018,11 @@ textarea:focus {
 .tag.pending {
   color: var(--brand-dark);
   background: #fff3d8;
+}
+
+.tag.neutral {
+  color: var(--muted);
+  background: var(--surface-soft);
 }
 
 .icon-danger {
@@ -1017,6 +1104,30 @@ textarea:focus {
   white-space: normal;
 }
 
+.payments-table-wrap {
+  display: grid;
+  gap: 12px;
+}
+
+.table-compact-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.table-compact-notice button {
+  min-height: 36px;
+  width: auto;
+  white-space: nowrap;
+}
+
 .daily-table {
   display: grid;
   min-width: 1040px;
@@ -1049,6 +1160,14 @@ textarea:focus {
 
 .daily-row strong {
   text-align: right;
+}
+
+.payments-table {
+  min-width: 1240px;
+}
+
+.payments-table .daily-row {
+  grid-template-columns: 100px 1.15fr 100px 96px 110px 80px 110px 120px 110px 100px 110px;
 }
 
 .closures .daily-row {
@@ -2791,6 +2910,15 @@ textarea:focus {
     font-size: 22px;
   }
 
+  .table-compact-notice {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .table-compact-notice button {
+    width: 100%;
+  }
+
   .daily-table {
     min-width: 0;
     border: 0;
@@ -3549,3 +3677,81 @@ textarea:focus {
   }
 }
 
+
+
+.fichados-admin-panel > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.fichados-admin-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.fichados-admin-panel > summary div {
+  display: grid;
+  gap: 5px;
+}
+
+.fichados-admin-panel > summary strong {
+  font-size: 20px;
+}
+
+.fichados-admin-panel > summary small {
+  color: var(--muted);
+}
+
+.fichados-admin-panel > summary svg {
+  color: var(--brand-dark);
+  transition: transform 0.18s ease;
+}
+
+.fichados-admin-panel[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.fichados-admin-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.fichado-admin-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.fichado-admin-card .danger-button {
+  width: 100%;
+}
+
+.summary-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.summary-section-head h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.summary-section-head span {
+  color: var(--muted);
+}
+
+.fichado-summary-head {
+  margin-top: 26px;
+}

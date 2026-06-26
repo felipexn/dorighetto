@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { ChevronDown, Download, FileClock, Pencil, Trash2, Eye } from "lucide-react";
+import { ChevronDown, Download, Eye, FileClock, Save, Trash2, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { PaymentEntryForm } from "@/components/payment-entry-form";
+import { PaymentsTable } from "@/components/payments-table";
 import { PageHeader } from "@/components/ui";
-import { createDailyEntryAction, deleteDailyEntryAction } from "@/app/actions";
+import { createPayrollEmployeeAction, deleteDailyEntryAction, deletePayrollEmployeeAction, updatePayrollEmployeeAction } from "@/app/actions";
 import { prisma } from "@/lib/prisma";
 import { requireModule } from "@/lib/session";
 import { toDateInput } from "@/lib/diarias";
@@ -21,21 +23,54 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
   const canWrite = session.permissions.canWriteDaily;
   await ensurePayrollSchema(prisma);
 
-  const entries = await prisma.dailyEntry.findMany({
-    where: {
-      employeeName: params.funcionario || undefined,
-      role: params.funcao === "AJUDANTE" || params.funcao === "OPERADOR" ? params.funcao : undefined,
-      status: params.status === "PAGO" || params.status === "PENDENTE" ? params.status : "PENDENTE"
-    },
-    include: { closure: true },
-    orderBy: [{ date: "desc" }, { employeeName: "asc" }]
-  });
+  const [entries, employees, dailyNames] = await Promise.all([
+    prisma.dailyEntry.findMany({
+      where: {
+        employeeName: params.funcionario || undefined,
+        role: params.funcao === "AJUDANTE" || params.funcao === "OPERADOR" ? params.funcao : undefined,
+        status: params.status === "PAGO" || params.status === "PENDENTE" ? params.status : "PENDENTE"
+      },
+      include: { closure: true, employee: true },
+      orderBy: [{ date: "desc" }, { employeeName: "asc" }]
+    }),
+    prisma.payrollEmployee.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" }
+    }),
+    prisma.dailyEntry.findMany({
+      distinct: ["employeeName"],
+      select: { employeeName: true },
+      orderBy: { employeeName: "asc" }
+    })
+  ]);
 
-  const employees = await prisma.dailyEntry.findMany({
-    distinct: ["employeeName"],
-    select: { employeeName: true },
-    orderBy: { employeeName: "asc" }
-  });
+  const employeeOptions = Array.from(new Set([
+    ...employees.map((employee) => employee.name),
+    ...dailyNames.map((employee) => employee.employeeName)
+  ])).sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+  const activeFichados = employees.filter((employee) => employee.type === "FICHADO");
+  const fichados = activeFichados.map((employee) => ({
+    name: employee.name,
+    role: employee.role,
+    monthlySalary: employee.monthlySalary ? decimalToNumber(employee.monthlySalary) : null,
+    defaultOvertimeRate: employee.defaultOvertimeRate ? decimalToNumber(employee.defaultOvertimeRate) : null
+  }));
+
+  const tableEntries = entries.map((entry) => ({
+    id: entry.id,
+    date: formatDate(entry.date),
+    employeeName: entry.employeeName,
+    role: entry.role,
+    employeeType: entry.employeeType,
+    dailyValue: formatCurrency(decimalToNumber(entry.dailyValue)),
+    overtimeHours: decimalToNumber(entry.overtimeHours).toLocaleString("pt-BR", { maximumFractionDigits: 2 }),
+    overtimeRate: formatCurrency(decimalToNumber(entry.overtimeRate)),
+    monthlySalary: entry.monthlySalary ? formatCurrency(decimalToNumber(entry.monthlySalary)) : "-",
+    dayTotal: formatCurrency(decimalToNumber(entry.dayTotal)),
+    status: entry.status,
+    closureId: entry.closureId
+  }));
 
   const isPaidFilter = params.status === "PAGO";
   const paidGroups = Array.from(entries.reduce((map, entry) => {
@@ -56,44 +91,89 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
     .sort((a, b) => b.dateKey.localeCompare(a.dateKey));
 
   const pending = await prisma.dailyEntry.groupBy({
-    by: ["employeeName", "role"],
+    by: ["employeeName", "role", "employeeType"],
     where: { status: "PENDENTE" },
     _count: { id: true },
     _sum: { dailyValue: true, overtimeTotal: true, dayTotal: true },
     orderBy: { employeeName: "asc" }
   });
 
+  const pendingKeys = new Set(pending.map((item) => `${item.employeeName}-${item.role}-${item.employeeType}`));
+  const pendingDiaristas = pending.filter((item) => item.employeeType === "DIARISTA");
+  const pendingFichados = pending.filter((item) => item.employeeType === "FICHADO");
+  const emptyFichados = activeFichados.filter((employee) => !pendingKeys.has(`${employee.name}-${employee.role}-FICHADO`));
+  const summaryTotal = pendingDiaristas.length + pendingFichados.length + emptyFichados.length;
+
   return (
     <AppShell active="diarias" name={session.name} role={session.role} permissions={session.permissions}>
       <PageHeader
-        eyebrow="Diárias"
-        title="Diárias pendentes"
-        description="Lance os dias trabalhados. Ao pagar um funcionário, o sistema gera o recibo individual e limpa os pendentes dele."
+        eyebrow="Pagamentos"
+        title="Pagamentos pendentes"
+        description="Lance diaristas como antes, com diária e horas extras. Funcionários fichados ficam cadastrados e recebem apenas horas extras."
         actions={<Link className="button secondary" href="/diarias/historico"><FileClock size={18} /> Histórico</Link>}
       />
 
       {canWrite ? (
-        <form className="panel daily-form" action={createDailyEntryAction}>
-          <label>Data<input name="date" type="date" defaultValue={toDateInput(new Date())} required /></label>
-          <label>Funcionário
-            <input name="employeeName" list="employee-options" placeholder="Selecione ou digite novo nome" required />
-            <datalist id="employee-options">
-              {employees.map((employee) => <option key={employee.employeeName} value={employee.employeeName} />)}
-            </datalist>
-          </label>
-          <label>Função<select name="role" defaultValue="AJUDANTE"><option>AJUDANTE</option><option>OPERADOR</option></select></label>
-          <label>Diária<input name="dailyValue" placeholder="0,00" required /></label>
-          <label>H. extra<input name="overtimeHours" placeholder="0" /></label>
-          <label className="wide-field">Observação<input name="notes" placeholder="Opcional" /></label>
-          <button type="submit">Adicionar diária</button>
-        </form>
+        <section className="payment-entry-grid">
+          <PaymentEntryForm today={toDateInput(new Date())} employeeNames={employeeOptions} fichados={fichados} />
+
+          <details className="panel employee-register-panel">
+            <summary>
+              <div>
+                <span className="eyebrow">Cadastro de fichado</span>
+                <strong>Novo funcionário fichado</strong>
+                <small>Abra somente para cadastrar funcionário fichado. Salário mensal é opcional.</small>
+              </div>
+              <UserPlus size={20} />
+            </summary>
+            <form className="daily-form employee-register-form" action={createPayrollEmployeeAction}>
+              <label>Nome<input name="name" placeholder="Nome do funcionário" required /></label>
+              <label>Função<select name="role" defaultValue="AJUDANTE"><option>AJUDANTE</option><option>OPERADOR</option></select></label>
+              <label>Salário mensal<input name="monthlySalary" placeholder="Opcional" /></label>
+              <label>Hora extra padrão<input name="defaultOvertimeRate" placeholder="Opcional" /></label>
+              <button type="submit"><UserPlus size={18} /> Salvar fichado</button>
+            </form>
+          </details>
+        </section>
+      ) : null}
+
+      {canWrite ? (
+        <details className="panel fichados-admin-panel section-gap">
+          <summary>
+            <div>
+              <span className="eyebrow">Administração</span>
+              <strong>Administrar fichados</strong>
+              <small>{activeFichados.length} funcionários fichados cadastrados</small>
+            </div>
+            <ChevronDown size={20} />
+          </summary>
+          <div className="fichados-admin-list">
+            {activeFichados.length === 0 ? <p className="muted-text">Nenhum fichado cadastrado.</p> : null}
+            {activeFichados.map((employee) => (
+              <article className="fichado-admin-card" key={employee.id}>
+                <form className="daily-form employee-register-form" action={updatePayrollEmployeeAction}>
+                  <input type="hidden" name="id" value={employee.id} />
+                  <label>Nome<input name="name" defaultValue={employee.name} required /></label>
+                  <label>Função<select name="role" defaultValue={employee.role}><option>AJUDANTE</option><option>OPERADOR</option></select></label>
+                  <label>Salário mensal<input name="monthlySalary" defaultValue={employee.monthlySalary ? decimalToNumber(employee.monthlySalary) : ""} placeholder="Opcional" /></label>
+                  <label>Hora extra padrão<input name="defaultOvertimeRate" defaultValue={employee.defaultOvertimeRate ? decimalToNumber(employee.defaultOvertimeRate) : ""} placeholder="Opcional" /></label>
+                  <button type="submit"><Save size={18} /> Salvar</button>
+                </form>
+                <form action={deletePayrollEmployeeAction}>
+                  <input type="hidden" name="id" value={employee.id} />
+                  <button className="danger-button" type="submit"><Trash2 size={16} /> Remover da lista</button>
+                </form>
+              </article>
+            ))}
+          </div>
+        </details>
       ) : null}
 
       <form className="panel filters section-gap">
         <label>Funcionário
           <select name="funcionario" defaultValue={params.funcionario ?? ""}>
             <option value="">Todos</option>
-            {employees.map((employee) => <option key={employee.employeeName}>{employee.employeeName}</option>)}
+            {employeeOptions.map((employeeName) => <option key={employeeName}>{employeeName}</option>)}
           </select>
         </label>
         <label>Função
@@ -114,19 +194,19 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
 
       <section className="panel table-panel section-gap">
         <div className="table-head">
-          <h2>{isPaidFilter ? "Diárias pagas" : "Planilha geral"}</h2>
+          <h2>{isPaidFilter ? "Pagamentos pagos" : "Planilha geral"}</h2>
           <span>{entries.length} registros</span>
         </div>
 
         {isPaidFilter ? (
           <div className="paid-daily-groups">
-            {paidGroups.length === 0 ? <p className="muted-text">Nenhuma diária paga encontrada neste filtro.</p> : null}
+            {paidGroups.length === 0 ? <p className="muted-text">Nenhum pagamento pago encontrado neste filtro.</p> : null}
             {paidGroups.map((group) => (
               <details className="paid-daily-group" key={group.dateKey}>
                 <summary>
                   <div>
                     <strong>{group.label}</strong>
-                    <span>{group.entries.length} diárias pagas | {formatCurrency(group.total)}</span>
+                    <span>{group.entries.length} pagamentos pagos | {formatCurrency(group.total)}</span>
                   </div>
                   <ChevronDown size={18} />
                 </summary>
@@ -137,14 +217,15 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
                       <header>
                         <div>
                           <strong>{entry.employeeName}</strong>
-                          <span>{entry.role} | Trabalhado em {formatDate(entry.date)}</span>
+                          <span>{entry.role} | {entry.employeeType} | Trabalhado em {formatDate(entry.date)}</span>
                         </div>
                         <strong>{formatCurrency(decimalToNumber(entry.dayTotal))}</strong>
                       </header>
                       <div className="paid-daily-meta">
-                        <span>Diária: {formatCurrency(decimalToNumber(entry.dailyValue))}</span>
+                        {entry.employeeType === "DIARISTA" ? <span>Diária: {formatCurrency(decimalToNumber(entry.dailyValue))}</span> : null}
                         <span>H.E.: {decimalToNumber(entry.overtimeHours)}h</span>
                         <span>Total H.E.: {formatCurrency(decimalToNumber(entry.overtimeTotal))}</span>
+                        {entry.employeeType === "FICHADO" && entry.monthlySalary ? <span>Salário ref.: {formatCurrency(decimalToNumber(entry.monthlySalary))}</span> : null}
                       </div>
                       {entry.closureId ? (
                         <Link className="button secondary compact" href={`/diarias/fechamento/${entry.closureId}`}>
@@ -158,48 +239,27 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
             ))}
           </div>
         ) : (
-          <div className="daily-table">
-            <div className="daily-row header"><span>Data</span><span>Funcionário</span><span>Função</span><span>Diária</span><span>H.E.</span><span>Valor H.E.</span><span>Total</span><span>Status</span><span>Recibo</span></div>
-            {entries.map((entry) => (
-              <div className="daily-row" key={entry.id}>
-                <span data-label="Data">{formatDate(entry.date)}</span>
-                <span data-label="Funcionário">{entry.employeeName}</span>
-                <span data-label="Função">{entry.role}</span>
-                <span data-label="Diária">{formatCurrency(decimalToNumber(entry.dailyValue))}</span>
-                <span data-label="H.E.">{decimalToNumber(entry.overtimeHours)}h</span>
-                <span data-label="Valor H.E.">{formatCurrency(decimalToNumber(entry.overtimeRate))}</span>
-                <strong data-label="Total">{formatCurrency(decimalToNumber(entry.dayTotal))}</strong>
-                <span data-label="Status" className={entry.status === "PAGO" ? "tag income" : "tag pending"}>{entry.status}</span>
-                {canWrite && entry.status === "PENDENTE" ? (
-                  <div className="row-actions" data-label="Ações">
-                    <Link className="icon-button" href={`/diarias/${entry.id}/editar`} aria-label="Editar diária"><Pencil size={16} /></Link>
-                    <form action={deleteDailyEntryAction}>
-                      <input type="hidden" name="id" value={entry.id} />
-                      <button className="icon-danger" type="submit" aria-label="Deletar diária"><Trash2 size={16} /></button>
-                    </form>
-                  </div>
-                ) : entry.status === "PAGO" && entry.closureId ? (
-                  <Link className="button secondary compact" data-label="Recibo" href={`/diarias/fechamento/${entry.closureId}`}>
-                    <Download size={16} /> Abrir
-                  </Link>
-                ) : <span data-label="Recibo" />}
-              </div>
-            ))}
-          </div>
+          <PaymentsTable entries={tableEntries} canWrite={canWrite} />
         )}
       </section>
 
       <section className="panel section-gap">
         <div className="table-head">
           <h2>Resumo individual</h2>
-          <span>{pending.length} funcionários</span>
+          <span>{summaryTotal} funcionários</span>
+        </div>
+
+        <div className="summary-section-head">
+          <h3>Diaristas</h3>
+          <span>{pendingDiaristas.length} com pendências</span>
         </div>
         <div className="summary-grid">
-          {pending.map((item) => (
-            <article className="summary-card" key={`${item.employeeName}-${item.role}`}>
+          {pendingDiaristas.length === 0 ? <p className="muted-text">Nenhum diarista com pagamento pendente.</p> : null}
+          {pendingDiaristas.map((item) => (
+            <article className="summary-card" key={`${item.employeeName}-${item.role}-${item.employeeType}`}>
               <h3>{item.employeeName}</h3>
-              <span>{item.role}</span>
-              <div><small>Dias</small><strong>{item._count.id}</strong></div>
+              <span>{item.role} | {item.employeeType}</span>
+              <div><small>Lançamentos</small><strong>{item._count.id}</strong></div>
               <div><small>Diárias</small><strong>{formatCurrency(decimalToNumber(item._sum.dailyValue ?? 0))}</strong></div>
               <div><small>Horas extras</small><strong>{formatCurrency(decimalToNumber(item._sum.overtimeTotal ?? 0))}</strong></div>
               <div><small>Total</small><strong>{formatCurrency(decimalToNumber(item._sum.dayTotal ?? 0))}</strong></div>
@@ -211,13 +271,40 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
             </article>
           ))}
         </div>
+
+        <div className="summary-section-head fichado-summary-head">
+          <h3>Fichados</h3>
+          <span>{pendingFichados.length + emptyFichados.length} cadastrados</span>
+        </div>
+        <div className="summary-grid">
+          {pendingFichados.map((item) => (
+            <article className="summary-card" key={`${item.employeeName}-${item.role}-${item.employeeType}`}>
+              <h3>{item.employeeName}</h3>
+              <span>{item.role} | {item.employeeType}</span>
+              <div><small>Lançamentos</small><strong>{item._count.id}</strong></div>
+              <div><small>Diárias</small><strong>{formatCurrency(decimalToNumber(item._sum.dailyValue ?? 0))}</strong></div>
+              <div><small>Horas extras</small><strong>{formatCurrency(decimalToNumber(item._sum.overtimeTotal ?? 0))}</strong></div>
+              <div><small>Total</small><strong>{formatCurrency(decimalToNumber(item._sum.dayTotal ?? 0))}</strong></div>
+              {canWrite ? (
+                <Link className="button" href={`/diarias/pagamento/${encodeURIComponent(item.employeeName)}`}>
+                  <Eye size={18} /> Ver pagamento
+                </Link>
+              ) : null}
+            </article>
+          ))}
+          {emptyFichados.map((employee) => (
+            <article className="summary-card muted-summary-card" key={`${employee.name}-${employee.role}-FICHADO`}>
+              <h3>{employee.name}</h3>
+              <span>{employee.role} | FICHADO</span>
+              <div><small>Lançamentos</small><strong>0</strong></div>
+              <div><small>Salário ref.</small><strong>{employee.monthlySalary ? formatCurrency(decimalToNumber(employee.monthlySalary)) : "-"}</strong></div>
+              <div><small>Horas extras</small><strong>{formatCurrency(0)}</strong></div>
+              <div><small>Total</small><strong>{formatCurrency(0)}</strong></div>
+              <small className="muted-text">Sem horas extras pendentes.</small>
+            </article>
+          ))}
+        </div>
       </section>
     </AppShell>
   );
 }
-
-
-
-
-
-

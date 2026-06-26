@@ -35,7 +35,7 @@ export function AppShell({ active = "financeiro", role, name, permissions, child
           ) : null}
           {permissions.canAccessDaily ? (
             <Link className={active === "diarias" ? "active" : ""} href="/diarias">
-              <CalendarDays size={18} /> Diárias
+              <CalendarDays size={18} /> Pagamentos
             </Link>
           ) : null}
           {permissions.canAccessDrilling ? (
@@ -69,3 +69,4 @@ export function AppShell({ active = "financeiro", role, name, permissions, child
     </main>
   );
 }
+

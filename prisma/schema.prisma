@@ -25,6 +25,11 @@ enum DailyRole {
   OPERADOR
 }
 
+enum EmployeeType {
+  DIARISTA
+  FICHADO
+}
+
 enum PaymentStatus {
   PENDENTE
   PAGO
@@ -33,6 +38,11 @@ enum PaymentStatus {
 enum AdvanceStatus {
   PENDENTE
   DESCONTADO
+}
+
+enum AdditionStatus {
+  PENDENTE
+  INCLUIDO
 }
 
 model User {
@@ -86,11 +96,32 @@ model FinancialEntry {
   @@map("financial_entries")
 }
 
+model PayrollEmployee {
+  id                  String       @id @default(cuid())
+  name                String       @unique
+  role                DailyRole
+  type                EmployeeType @default(DIARISTA)
+  dailyValue          Decimal?     @map("daily_value") @db.Decimal(14, 2)
+  monthlySalary       Decimal?     @map("monthly_salary") @db.Decimal(14, 2)
+  defaultOvertimeRate Decimal?     @map("default_overtime_rate") @db.Decimal(14, 2)
+  isActive            Boolean      @default(true) @map("is_active")
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+
+  entries DailyEntry[]
+
+  @@index([name, isActive])
+  @@map("payroll_employees")
+}
+
 model DailyEntry {
   id              String        @id @default(cuid())
   date            DateTime
   employeeName    String        @map("employee_name")
+  employeeId      String?       @map("employee_id")
   role            DailyRole
+  employeeType    EmployeeType  @default(DIARISTA) @map("employee_type")
+  monthlySalary   Decimal?      @map("monthly_salary") @db.Decimal(14, 2)
   dailyValue      Decimal       @map("daily_value") @db.Decimal(14, 2)
   overtimeHours   Decimal       @default(0) @map("overtime_hours") @db.Decimal(8, 2)
   overtimeRate    Decimal       @default(0) @map("overtime_rate") @db.Decimal(14, 2)
@@ -103,8 +134,10 @@ model DailyEntry {
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
   closure PayrollClosure? @relation(fields: [closureId], references: [id])
+  employee PayrollEmployee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
 
   @@index([employeeName, date, status])
+  @@index([employeeId])
   @@index([closureId])
   @@map("daily_entries")
 }
@@ -113,6 +146,7 @@ model PayrollClosure {
   id            String   @id @default(cuid())
   employeeName  String   @map("employee_name")
   role          DailyRole
+  employeeType  EmployeeType @default(DIARISTA) @map("employee_type")
   periodStart   DateTime @map("period_start")
   periodEnd     DateTime @map("period_end")
   paidAt        DateTime @default(now()) @map("paid_at")
@@ -120,12 +154,14 @@ model PayrollClosure {
   totalDaily    Decimal  @map("total_daily") @db.Decimal(14, 2)
   totalOvertime Decimal  @map("total_overtime") @db.Decimal(14, 2)
   totalAdvance  Decimal  @default(0) @map("total_advance") @db.Decimal(14, 2)
+  totalAddition Decimal  @default(0) @map("total_addition") @db.Decimal(14, 2)
   totalPaid     Decimal  @map("total_paid") @db.Decimal(14, 2)
   receiptNumber String   @unique @map("receipt_number")
   createdAt     DateTime @default(now()) @map("created_at")
 
   entries DailyEntry[]
   advances PayrollAdvance[]
+  additions PayrollAddition[]
 
   @@index([employeeName, periodStart, periodEnd])
   @@map("payroll_closures")
@@ -146,6 +182,23 @@ model PayrollAdvance {
   @@index([employeeName, status])
   @@index([closureId])
   @@map("payroll_advances")
+}
+
+model PayrollAddition {
+  id           String         @id @default(cuid())
+  employeeName String         @map("employee_name")
+  amount       Decimal        @db.Decimal(14, 2)
+  notes        String
+  status       AdditionStatus @default(PENDENTE)
+  closureId    String?        @map("closure_id")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  closure PayrollClosure? @relation(fields: [closureId], references: [id], onDelete: SetNull)
+
+  @@index([employeeName, status])
+  @@index([closureId])
+  @@map("payroll_additions")
 }
 
 model DrillingRecord {

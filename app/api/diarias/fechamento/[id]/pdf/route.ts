@@ -120,6 +120,9 @@ export async function GET(_: Request, { params }: Props) {
       },
       advances: {
         orderBy: { createdAt: "asc" }
+      },
+      additions: {
+        orderBy: { createdAt: "asc" }
       }
     }
   });
@@ -162,8 +165,8 @@ export async function GET(_: Request, { params }: Props) {
     drawInfoCard(doc, "Período", `${formatDate(closure.periodStart)} a ${formatDate(closure.periodEnd)}`, contentX + (cardWidth + cardGap) * 2, y, cardWidth);
     y += 58;
     drawInfoCard(doc, "Data do pagamento", formatDate(closure.paidAt), contentX, y, cardWidth);
-    drawInfoCard(doc, "Dias trabalhados", String(closure.daysWorked), contentX + cardWidth + cardGap, y, cardWidth);
-    drawInfoCard(doc, "Status do recibo", "PAGO", contentX + (cardWidth + cardGap) * 2, y, cardWidth);
+    drawInfoCard(doc, "Tipo", closure.employeeType, contentX + cardWidth + cardGap, y, cardWidth);
+    drawInfoCard(doc, "Lançamentos", String(closure.daysWorked), contentX + (cardWidth + cardGap) * 2, y, cardWidth);
     y += 72;
 
     drawTableHeader(doc, contentX, y, tableWidths);
@@ -196,6 +199,29 @@ export async function GET(_: Request, { params }: Props) {
     });
 
     y += 18;
+    if (closure.additions.length > 0) {
+      const additionBoxHeight = 36 + closure.additions.length * 24;
+      if (y > PAGE.height - additionBoxHeight - 155) {
+        doc.addPage({ margin: 0 });
+        y = PAGE.margin;
+      }
+
+      drawRoundedRect(doc, contentX, y, contentWidth, additionBoxHeight, COLOR.paper);
+      doc.fillColor(COLOR.ink).font("Helvetica-Bold").fontSize(10);
+      text(doc, "ACR?SCIMOS INCLU?DOS", contentX + 12, y + 12, { width: contentWidth - 24 });
+
+      closure.additions.forEach((addition, index) => {
+        const rowY = y + 36 + index * 24;
+        doc.moveTo(contentX, rowY).lineTo(contentX + contentWidth, rowY).lineWidth(1).strokeColor(COLOR.softLine).stroke();
+        doc.fillColor(COLOR.muted).font("Helvetica").fontSize(9);
+        text(doc, addition.notes, contentX + 12, rowY + 7, { width: contentWidth - 150 });
+        doc.fillColor(COLOR.ink).font("Helvetica-Bold").fontSize(9);
+        text(doc, `+ ${formatCurrency(decimalToNumber(addition.amount))}`, contentX + contentWidth - 132, rowY + 7, { width: 120, align: "right" });
+      });
+
+      y += additionBoxHeight + 18;
+    }
+
     if (closure.advances.length > 0) {
       const advanceBoxHeight = 36 + closure.advances.length * 24;
       if (y > PAGE.height - advanceBoxHeight - 155) {
@@ -224,7 +250,8 @@ export async function GET(_: Request, { params }: Props) {
     const totalRows = [
       ["Total de diárias", formatCurrency(decimalToNumber(closure.totalDaily))],
       ["Total horas extras", formatCurrency(decimalToNumber(closure.totalOvertime))],
-      ["Total bruto", formatCurrency(decimalToNumber(closure.totalDaily.add(closure.totalOvertime)))],
+      ["Acr?scimos", `+ ${formatCurrency(decimalToNumber(closure.totalAddition))}`],
+      ["Total bruto", formatCurrency(decimalToNumber(closure.totalDaily.add(closure.totalOvertime).add(closure.totalAddition)))],
       ["Vales descontados", `- ${formatCurrency(decimalToNumber(closure.totalAdvance))}`],
       ["Total líquido recebido", formatCurrency(decimalToNumber(closure.totalPaid))]
     ];

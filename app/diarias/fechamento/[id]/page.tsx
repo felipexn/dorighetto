@@ -23,13 +23,14 @@ export default async function FechamentoPage({ params }: Props) {
     where: { id },
     include: {
       entries: { orderBy: { date: "asc" } },
-      advances: { orderBy: { createdAt: "asc" } }
+      advances: { orderBy: { createdAt: "asc" } },
+      additions: { orderBy: { createdAt: "asc" } }
     }
   });
 
   if (!closure) notFound();
 
-  const grossTotal = closure.totalDaily.add(closure.totalOvertime);
+  const grossTotal = closure.totalDaily.add(closure.totalOvertime).add(closure.totalAddition);
 
   return (
     <AppShell active="diarias" name={session.name} role={session.role} permissions={session.permissions}>
@@ -66,7 +67,7 @@ export default async function FechamentoPage({ params }: Props) {
             <div><span>Função</span><strong>{closure.role}</strong></div>
             <div><span>Período</span><strong>{formatDate(closure.periodStart)} a {formatDate(closure.periodEnd)}</strong></div>
             <div><span>Data do pagamento</span><strong>{formatDate(closure.paidAt)}</strong></div>
-            <div><span>Dias trabalhados</span><strong>{closure.daysWorked}</strong></div>
+            <div><span>Lançamentos</span><strong>{closure.daysWorked}</strong></div>
             <div><span>Total líquido recebido</span><strong>{formatCurrency(decimalToNumber(closure.totalPaid))}</strong></div>
           </div>
 
@@ -84,6 +85,18 @@ export default async function FechamentoPage({ params }: Props) {
             ))}
           </div>
 
+          {closure.additions.length > 0 ? (
+            <div className="pdf-advance-box">
+              <strong>Acr?scimos inclu?dos</strong>
+              {closure.additions.map((addition) => (
+                <div key={addition.id}>
+                  <span>{addition.notes}</span>
+                  <strong>+ {formatCurrency(decimalToNumber(addition.amount))}</strong>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
           {closure.advances.length > 0 ? (
             <div className="pdf-advance-box">
               <strong>Vales descontados</strong>
@@ -99,6 +112,7 @@ export default async function FechamentoPage({ params }: Props) {
           <div className="pdf-total-box">
             <div><span>Total de diárias</span><strong>{formatCurrency(decimalToNumber(closure.totalDaily))}</strong></div>
             <div><span>Total horas extras</span><strong>{formatCurrency(decimalToNumber(closure.totalOvertime))}</strong></div>
+            <div><span>Acr?scimos</span><strong>+ {formatCurrency(decimalToNumber(closure.totalAddition))}</strong></div>
             <div><span>Total bruto</span><strong>{formatCurrency(decimalToNumber(grossTotal))}</strong></div>
             <div><span>Vales descontados</span><strong>- {formatCurrency(decimalToNumber(closure.totalAdvance))}</strong></div>
             <div className="grand-total"><span>Total líquido recebido</span><strong>{formatCurrency(decimalToNumber(closure.totalPaid))}</strong></div>
