@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useActionState } from "react";
 import Image from "next/image";
@@ -19,12 +19,20 @@ export function LoginForm() {
 
       <label>
         Usuário ou email
-        <input name="email" type="text" placeholder="najara" autoComplete="username" required />
+        <input name="email" type="text" placeholder="Seu login" autoComplete="username" required />
       </label>
 
       <label>
         Senha
         <input name="password" type="password" placeholder="Sua senha" required />
+      </label>
+
+      <label className="remember-login">
+        <input name="remember" type="checkbox" />
+        <span>
+          <strong>Manter conectado</strong>
+          <small>Não pedir senha neste dispositivo.</small>
+        </span>
       </label>
 
       {state?.error ? <div className="form-error">{state.error}</div> : null}

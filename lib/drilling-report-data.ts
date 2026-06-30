@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { ensureDrillingSchema } from "@/lib/drilling-schema";
 import { decimalToNumber, formatDate } from "@/lib/format";
 import { normalizeDrillingBankName, normalizeDrillingMachineName, normalizeDrillingShift, formatDrillingShift } from "@/lib/drilling";
 
@@ -212,7 +211,6 @@ export async function getDrillingReportData(prisma: PrismaClient, rawFilters: Dr
   let setupWarning = "";
 
   try {
-    await ensureDrillingSchema(prisma);
 
     let records = await prisma.drillingRecord.findMany({
       where: {
@@ -297,7 +295,7 @@ export async function getDrillingReportData(prisma: PrismaClient, rawFilters: Dr
       setupWarning
     };
   } catch {
-    setupWarning = "Módulo criado. Falta apenas sincronizar o schema no banco para listar os relatórios.";
+    setupWarning = "Não foi possível consultar os relatórios. Rode npm run db:ensure-schema e tente novamente.";
   }
 
   const emptySummary = summarizeRecords([]);

@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle2 } from "lucide-react";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { payFortnightAction } from "@/app/actions";
 
 type Props = {
@@ -12,13 +13,9 @@ export function ConfirmPaymentForm({ employeeName, total }: Props) {
   return (
     <form
       action={payFortnightAction}
-      onSubmit={(event) => {
-        const confirmed = window.confirm(`Confirmar pagamento de ${employeeName} no valor de ${total}?`);
-        if (!confirmed) event.preventDefault();
-      }}
     >
       <input type="hidden" name="employeeName" value={employeeName} />
-      <button type="submit"><CheckCircle2 size={18} /> Confirmar pagamento</button>
+      <ConfirmSubmitButton message={`Confirmar pagamento de ${employeeName} no valor de ${total}?`}><CheckCircle2 size={18} /> Confirmar pagamento</ConfirmSubmitButton>
     </form>
   );
 }

@@ -1,4 +1,4 @@
-﻿import path from "node:path";
+import path from "node:path";
 import { NextResponse } from "next/server";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/format";
 import { requireModule } from "@/lib/session";
@@ -106,11 +106,8 @@ function drawHeader(doc: PdfDoc, closure: { receiptNumber: string }) {
 export async function GET(_: Request, { params }: Props) {
   await requireModule("diarias");
   const { prisma } = await import("@/lib/prisma");
-  const { ensurePayrollSchema } = await import("@/lib/payroll-schema");
   const PDFDocument = (await import("pdfkit")).default;
   const { id } = await params;
-
-  await ensurePayrollSchema(prisma);
 
   const closure = await prisma.payrollClosure.findUnique({
     where: { id },

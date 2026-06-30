@@ -55,7 +55,14 @@ export default function LandingPage() {
             para mineração, pedreiras, frentes de lavra e serviços de campo que exigem execução confiável.
           </p>
           <div className="landing-actions">
-            <a className="landing-primary" href="tel:+5594991395293"><Phone size={18} /> Falar agora</a>
+            <a
+              className="landing-primary"
+              href="https://wa.me/5594991395293?text=Ol%C3%A1%2C%20tenho%20interesse%20no%20servi%C3%A7o"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Phone size={18} /> Falar agora
+            </a>
             <a className="landing-secondary" href="#servicos">Conhecer serviços <ArrowUpRight size={18} /></a>
           </div>
         </div>

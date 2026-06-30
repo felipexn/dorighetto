@@ -1,4 +1,5 @@
-﻿import type { UserRole } from "@prisma/client";
+import type { UserRole } from "@prisma/client";
+import { readBoolean } from "@/lib/form-validation";
 
 export type ModuleKey = "financeiro" | "diarias" | "perfuracao" | "usuarios";
 
@@ -17,6 +18,8 @@ export type PermissionSource = UserPermissionSet & {
   isActive?: boolean;
 };
 
+export const userRoleValues = ["ADMIN", "FINANCEIRO", "RH", "PERFURACAO", "LEITOR"] as const satisfies readonly UserRole[];
+
 export const roleLabels: Record<UserRole, string> = {
   ADMIN: "Administrador",
   FINANCEIRO: "Financeiro",
@@ -25,13 +28,22 @@ export const roleLabels: Record<UserRole, string> = {
   LEITOR: "Leitor"
 };
 
-export const roleOptions: { value: UserRole; label: string }[] = [
-  { value: "ADMIN", label: roleLabels.ADMIN },
-  { value: "FINANCEIRO", label: roleLabels.FINANCEIRO },
-  { value: "RH", label: roleLabels.RH },
-  { value: "PERFURACAO", label: roleLabels.PERFURACAO },
-  { value: "LEITOR", label: roleLabels.LEITOR }
-];
+export const roleOptions: { value: UserRole; label: string }[] = userRoleValues.map((role) => ({
+  value: role,
+  label: roleLabels[role]
+}));
+
+export const permissionOptions = [
+  { name: "canAccessFinance", label: "Acessar financeiro" },
+  { name: "canWriteFinance", label: "Editar financeiro" },
+  { name: "canAccessDaily", label: "Acessar diárias" },
+  { name: "canWriteDaily", label: "Editar diárias e pagamentos" },
+  { name: "canAccessDrilling", label: "Acessar perfuração" },
+  { name: "canWriteDrilling", label: "Editar perfuração" },
+  { name: "canManageUsers", label: "Gerenciar usuários" }
+] as const satisfies readonly { name: keyof UserPermissionSet; label: string }[];
+
+export type PermissionFieldName = (typeof permissionOptions)[number]["name"];
 
 export function defaultPermissionsForRole(role: UserRole): UserPermissionSet {
   if (role === "ADMIN") {
@@ -105,6 +117,17 @@ export function resolvePermissions(user: PermissionSource): UserPermissionSet {
     canWriteDrilling: user.canWriteDrilling && user.canAccessDrilling,
     canManageUsers: user.canManageUsers
   };
+}
+
+export function readUserPermissionData(formData: FormData, role: UserRole) {
+  if (role === "ADMIN") return defaultPermissionsForRole("ADMIN");
+
+  const permissions = permissionOptions.reduce((acc, option) => ({
+    ...acc,
+    [option.name]: readBoolean(formData, option.name)
+  }), {} as UserPermissionSet);
+
+  return resolvePermissions({ role, ...permissions });
 }
 
 export function canAccessModule(permissions: UserPermissionSet, module: ModuleKey) {

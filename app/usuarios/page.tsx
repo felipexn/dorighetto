@@ -1,21 +1,26 @@
 import { ShieldCheck, UserPlus } from "lucide-react";
 import { createUserAction, deleteUserAction, toggleUserActiveAction, updateUserAction } from "@/app/actions";
 import { AppShell } from "@/components/app-shell";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
-import { ensureUserSchema } from "@/lib/user-schema";
-import { defaultPermissionsForRole, resolvePermissions, roleLabels, roleOptions } from "@/lib/user-permissions";
+import { defaultPermissionsForRole, permissionOptions, resolvePermissions, roleLabels, roleOptions } from "@/lib/user-permissions";
 
-const permissionFields = [
-  ["canAccessFinance", "Acessar financeiro"],
-  ["canWriteFinance", "Editar financeiro"],
-  ["canAccessDaily", "Acessar diárias"],
-  ["canWriteDaily", "Editar diárias e pagamentos"],
-  ["canAccessDrilling", "Acessar perfuração"],
-  ["canWriteDrilling", "Editar perfuração"],
-  ["canManageUsers", "Gerenciar usuários"]
-] as const;
+
+const usageDateFormatter = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "short",
+  timeStyle: "short",
+  timeZone: "America/Sao_Paulo"
+});
+
+function formatUsageDate(value: Date | null) {
+  return value ? usageDateFormatter.format(value) : "Nunca";
+}
+
+function formatUsageCount(value: number) {
+  return `${value} ${value === 1 ? "uso" : "usos"}`;
+}
 
 function RoleSelect({ defaultValue }: { defaultValue?: string }) {
   return (
@@ -25,10 +30,10 @@ function RoleSelect({ defaultValue }: { defaultValue?: string }) {
   );
 }
 
-function PermissionChecks({ permissions }: { permissions: Record<(typeof permissionFields)[number][0], boolean> }) {
+function PermissionChecks({ permissions }: { permissions: Record<(typeof permissionOptions)[number]["name"], boolean> }) {
   return (
     <div className="permission-grid">
-      {permissionFields.map(([name, label]) => (
+      {permissionOptions.map(({ name, label }) => (
         <label className="permission-check" key={name}>
           <input name={name} type="checkbox" defaultChecked={permissions[name]} />
           <span>{label}</span>
@@ -40,7 +45,6 @@ function PermissionChecks({ permissions }: { permissions: Record<(typeof permiss
 
 export default async function UsuariosPage() {
   const session = await requireAdmin();
-  await ensureUserSchema(prisma);
 
   const users = await prisma.user.findMany({
     orderBy: [{ isActive: "desc" }, { name: "asc" }]
@@ -65,7 +69,7 @@ export default async function UsuariosPage() {
           <div className="user-form-fields">
             <label>Nome<input name="name" placeholder="Ex: Najara" required /></label>
             <label>Login ou e-mail<input name="email" placeholder="Ex: najara" required /></label>
-            <label>Senha<input name="password" type="password" placeholder="Senha inicial" required /></label>
+            <label>Senha<input name="password" type="password" minLength={12} placeholder="Mínimo de 12 caracteres" required /></label>
             <label>Tipo de acesso<RoleSelect /></label>
           </div>
           <PermissionChecks permissions={defaultReaderPermissions} />
@@ -88,12 +92,32 @@ export default async function UsuariosPage() {
                 <span className={user.isActive ? "status-pill active" : "status-pill inactive"}>{user.isActive ? "Ativo" : "Inativo"}</span>
               </div>
 
+              <div className="user-usage-grid" aria-label={`Uso registrado para ${user.name}`}>
+                <div>
+                  <span>Último login</span>
+                  <strong>{formatUsageDate(user.lastLoginAt)}</strong>
+                </div>
+                <div>
+                  <span>Último uso</span>
+                  <strong>{formatUsageDate(user.lastActivityAt)}</strong>
+                  <small>{user.lastActivityPath ?? "Sem tela registrada"}</small>
+                </div>
+                <div>
+                  <span>Viu gráficos</span>
+                  <strong>{formatUsageDate(user.lastReportViewAt)}</strong>
+                </div>
+                <div>
+                  <span>Total registrado</span>
+                  <strong>{formatUsageCount(user.activityCount)}</strong>
+                </div>
+              </div>
+
               <form className="user-form" action={updateUserAction}>
                 <input type="hidden" name="id" value={user.id} />
                 <div className="user-form-fields">
                   <label>Nome<input name="name" defaultValue={user.name} required /></label>
                   <label>Login ou e-mail<input name="email" defaultValue={user.email} required /></label>
-                  <label>Nova senha <small>Deixe em branco para manter</small><input name="password" type="password" placeholder="Opcional" /></label>
+                  <label>Nova senha <small>Deixe em branco para manter</small><input name="password" type="password" minLength={12} placeholder="Opcional, mínimo 12 caracteres" /></label>
                   <label>Tipo de acesso<RoleSelect defaultValue={user.role} /></label>
                 </div>
                 <label className="permission-check compact-check">
@@ -111,11 +135,15 @@ export default async function UsuariosPage() {
                 <form action={toggleUserActiveAction}>
                   <input type="hidden" name="id" value={user.id} />
                   {!user.isActive ? <input type="hidden" name="isActive" value="on" /> : null}
-                  <button className="secondary" type="submit" disabled={isCurrentUser}>{user.isActive ? "Desativar" : "Ativar"}</button>
+                  {user.isActive ? (
+                    <ConfirmSubmitButton className="secondary" disabled={isCurrentUser} message={`Desativar o usuário ${user.name}?`}>Desativar</ConfirmSubmitButton>
+                  ) : (
+                    <button className="secondary" type="submit" disabled={isCurrentUser}>Ativar</button>
+                  )}
                 </form>
                 <form action={deleteUserAction}>
                   <input type="hidden" name="id" value={user.id} />
-                  <button className="danger-button inline-danger" type="submit" disabled={isCurrentUser}>Excluir</button>
+                  <ConfirmSubmitButton className="danger-button inline-danger" disabled={isCurrentUser} message={`Excluir definitivamente o usuário ${user.name}?`}>Excluir</ConfirmSubmitButton>
                 </form>
               </div>
             </article>

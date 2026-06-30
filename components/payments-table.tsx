@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Download, Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { deleteDailyEntryAction } from "@/app/actions";
 
 type PaymentEntry = {
@@ -62,7 +63,7 @@ export function PaymentsTable({ entries, canWrite }: Props) {
                 <Link className="icon-button" href={`/diarias/${entry.id}/editar`} aria-label="Editar pagamento"><Pencil size={16} /></Link>
                 <form action={deleteDailyEntryAction}>
                   <input type="hidden" name="id" value={entry.id} />
-                  <button className="icon-danger" type="submit" aria-label="Deletar pagamento"><Trash2 size={16} /></button>
+                  <ConfirmSubmitButton className="icon-danger" aria-label="Deletar pagamento" message={`Excluir o pagamento de ${entry.employeeName} em ${entry.date}?`}><Trash2 size={16} /></ConfirmSubmitButton>
                 </form>
               </div>
             ) : entry.status === "PAGO" && entry.closureId ? (

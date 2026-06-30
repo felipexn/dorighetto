@@ -5,11 +5,9 @@ import { PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { requireModule } from "@/lib/session";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/format";
-import { ensurePayrollSchema } from "@/lib/payroll-schema";
 
 export default async function HistoricoDiariasPage() {
   const session = await requireModule("diarias");
-  await ensurePayrollSchema(prisma);
 
   const closures = await prisma.payrollClosure.findMany({
     orderBy: { paidAt: "desc" }

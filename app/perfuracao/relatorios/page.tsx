@@ -10,7 +10,7 @@ import { getDrillingReportData, type DrillingReportFilters } from "@/lib/drillin
 type SearchParams = Promise<DrillingReportFilters>;
 
 export default async function RelatoriosPerfuracaoPage({ searchParams }: { searchParams: SearchParams }) {
-  const session = await requireModule("perfuracao");
+  const session = await requireModule("perfuracao", "Relatórios de perfuração", { reportView: true });
   const params = await searchParams;
   const initialData = await getDrillingReportData(prisma, params);
 

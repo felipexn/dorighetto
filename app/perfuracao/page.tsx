@@ -1,12 +1,12 @@
 import { BarChart3, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/ui";
 import { PerfuracaoFormFields } from "@/components/perfuracao-form";
 import { createDrillingRecordAction, deleteDrillingRecordAction } from "@/app/actions";
 import { prisma } from "@/lib/prisma";
 import { requireModule } from "@/lib/session";
-import { ensureDrillingSchema } from "@/lib/drilling-schema";
 import { decimalToNumber, formatDate } from "@/lib/format";
 import { toDateInput } from "@/lib/diarias";
 import {
@@ -69,7 +69,6 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
   let setupWarning = "";
 
   try {
-    await ensureDrillingSchema(prisma);
 
     records = await prisma.drillingRecord.findMany({
       include: {
@@ -110,7 +109,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
       return true;
     });
   } catch {
-    setupWarning = "Modulo criado. Falta apenas sincronizar o schema no banco para salvar e listar dados.";
+    setupWarning = "Não foi possível consultar a perfuração. Rode a sincronização do banco e tente novamente.";
   }
 
   function metersLabel(value: number) {
@@ -281,7 +280,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
                           <Link className="button secondary compact" href={`/perfuracao/${record.id}/editar`}><Pencil size={16} /> Editar</Link>
                           <form action={deleteDrillingRecordAction}>
                             <input type="hidden" name="id" value={record.id} />
-                            <button className="danger-button inline-danger" type="submit"><Trash2 size={16} /> Deletar ficha</button>
+                            <ConfirmSubmitButton className="danger-button inline-danger" message={`Deletar a ficha da equipe ${record.teamName} em ${formatDate(record.date)}?`}><Trash2 size={16} /> Deletar ficha</ConfirmSubmitButton>
                           </form>
                         </div>
                       ) : null}

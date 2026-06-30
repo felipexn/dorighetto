@@ -7,7 +7,6 @@ import { PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { requireModule } from "@/lib/session";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/format";
-import { ensurePayrollSchema } from "@/lib/payroll-schema";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -16,8 +15,6 @@ type Props = {
 export default async function FechamentoPage({ params }: Props) {
   const session = await requireModule("diarias");
   const { id } = await params;
-
-  await ensurePayrollSchema(prisma);
 
   const closure = await prisma.payrollClosure.findUnique({
     where: { id },

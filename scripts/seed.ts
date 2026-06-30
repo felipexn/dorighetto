@@ -2,8 +2,24 @@ import bcrypt from "bcryptjs";
 import { PrismaClient, UserRole } from "@prisma/client";
 
 const prisma = new PrismaClient();
+const minimumPasswordLength = 12;
+
+function requiredEnv(name: string) {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    throw new Error(`Configure ${name} antes de rodar npm run db:seed.`);
+  }
+  return value;
+}
+
+function assertSeedPassword(name: string, password: string) {
+  if (password.length < minimumPasswordLength) {
+    throw new Error(`${name} deve ter pelo menos ${minimumPasswordLength} caracteres.`);
+  }
+}
 
 async function upsertUser(email: string, password: string, name: string, role: UserRole) {
+  assertSeedPassword(`${role}_PASSWORD`, password);
   const passwordHash = await bcrypt.hash(password, 10);
 
   await prisma.user.upsert({
@@ -15,18 +31,21 @@ async function upsertUser(email: string, password: string, name: string, role: U
 
 async function main() {
   await upsertUser(
-    process.env.ADMIN_EMAIL ?? "admin@dorighetto.local",
-    process.env.ADMIN_PASSWORD ?? "admin123456",
+    process.env.ADMIN_EMAIL?.trim() || "admin@dorighetto.local",
+    requiredEnv("ADMIN_PASSWORD"),
     "Administrador",
     "ADMIN"
   );
 
-  await upsertUser(
-    process.env.READER_EMAIL ?? "leitor@dorighetto.local",
-    process.env.READER_PASSWORD ?? "leitor123456",
-    "Leitor",
-    "LEITOR"
-  );
+  const readerPassword = process.env.READER_PASSWORD?.trim();
+  if (readerPassword) {
+    await upsertUser(
+      process.env.READER_EMAIL?.trim() || "leitor@dorighetto.local",
+      readerPassword,
+      "Leitor",
+      "LEITOR"
+    );
+  }
 }
 
 main()

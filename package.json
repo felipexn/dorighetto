@@ -9,6 +9,7 @@
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
+    "db:ensure-schema": "tsx scripts/ensure-schema.ts",
     "db:seed": "tsx scripts/seed.ts",
     "financeiro:import": "tsx scripts/import-financeiro.ts",
     "diarias:import": "tsx scripts/import-diarias.ts",

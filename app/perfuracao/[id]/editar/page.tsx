@@ -9,7 +9,6 @@ import { decimalToNumber } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requireModuleWrite } from "@/lib/session";
 import { toDateInput } from "@/lib/diarias";
-import { ensureDrillingSchema } from "@/lib/drilling-schema";
 import {
   defaultDrillingMachineOptions,
   drillingShiftOptions,
@@ -28,8 +27,6 @@ export default async function EditarPerfuracaoPage({ params, searchParams }: Pro
   const { id } = await params;
   const query = await searchParams;
   const actionError = query.erro ? decodeURIComponent(query.erro) : "";
-
-  await ensureDrillingSchema(prisma);
 
   const [record, equipes, machines] = await Promise.all([
     prisma.drillingRecord.findUnique({

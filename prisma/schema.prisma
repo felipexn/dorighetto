@@ -59,6 +59,11 @@ model User {
   canAccessDrilling  Boolean  @default(true) @map("can_access_drilling")
   canWriteDrilling   Boolean  @default(false) @map("can_write_drilling")
   canManageUsers     Boolean  @default(false) @map("can_manage_users")
+  lastLoginAt        DateTime? @map("last_login_at")
+  lastActivityAt     DateTime? @map("last_activity_at")
+  lastActivityPath   String?   @map("last_activity_path")
+  activityCount      Int       @default(0) @map("activity_count")
+  lastReportViewAt   DateTime? @map("last_report_view_at")
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 

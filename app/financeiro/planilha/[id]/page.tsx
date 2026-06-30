@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { createEntryAction, deleteEntryAction, deleteSheetAction, updateSheetAction } from "@/app/actions";
 import { AppShell } from "@/components/app-shell";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { FinancialPrivacyToggle } from "@/components/financial-privacy-toggle";
 import { PrivateValue } from "@/components/private-value";
 import { PageHeader } from "@/components/ui";
@@ -73,7 +74,7 @@ export default async function PlanilhaFinanceiraPage({ params }: { params: Param
               <strong>Excluir planilha</strong>
               <span>Use apenas se tiver certeza. Esta ação remove também os lançamentos.</span>
             </div>
-            <button className="danger-button inline-danger" type="submit"><Trash2 size={16} /> Deletar planilha</button>
+            <ConfirmSubmitButton className="danger-button inline-danger" message={`Excluir a planilha ${sheet.name} e todos os lançamentos?`}><Trash2 size={16} /> Deletar planilha</ConfirmSubmitButton>
           </form>
         </section>
       ) : null}
@@ -110,7 +111,7 @@ export default async function PlanilhaFinanceiraPage({ params }: { params: Param
                   <form action={deleteEntryAction}>
                     <input type="hidden" name="id" value={entry.id} />
                     <input type="hidden" name="sheetId" value={sheet.id} />
-                    <button className="icon-danger" type="submit" aria-label="Excluir lançamento"><Trash2 size={16} /></button>
+                    <ConfirmSubmitButton className="icon-danger" aria-label="Excluir lançamento" message={`Excluir o lançamento ${entry.item}?`}><Trash2 size={16} /></ConfirmSubmitButton>
                   </form>
                 ) : null}
               </span>

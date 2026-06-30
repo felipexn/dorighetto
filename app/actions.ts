@@ -1,18 +1,28 @@
-﻿"use server";
+"use server";
 
 import bcrypt from "bcryptjs";
-import { EntryType, Prisma, type DailyRole, type EmployeeType, type UserRole } from "@prisma/client";
+import { Prisma, type DailyRole, type EmployeeType, type EntryType, type UserRole } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { createSession, destroySession, requireAdmin, requireModuleWrite } from "@/lib/session";
-import { parseMoney, requiredText } from "@/lib/finance";
-import { makeReceiptNumber, parseDecimal } from "@/lib/diarias";
-import { ensureDrillingSchema } from "@/lib/drilling-schema";
+import { recordUserLogin } from "@/lib/user-activity";
+import { optionalDecimal, optionalText, parseDecimal, parseMoney, readBoolean, readDate, readEnum, readLoginIdentifier, requiredText } from "@/lib/form-validation";
+import { makeReceiptNumber } from "@/lib/diarias";
 import { normalizeDrillingBankName, normalizeDrillingMachineName, normalizeDrillingShift } from "@/lib/drilling";
-import { ensurePayrollSchema } from "@/lib/payroll-schema";
-import { ensureUserSchema } from "@/lib/user-schema";
-import { defaultPermissionsForRole, firstAllowedPath, resolvePermissions } from "@/lib/user-permissions";
+import { firstAllowedPath, readUserPermissionData, resolvePermissions, userRoleValues } from "@/lib/user-permissions";
+
+const minimumPasswordLength = 12;
+
+function assertStrongPassword(password: string) {
+  if (password.length < minimumPasswordLength) {
+    throw new Error(`A senha deve ter pelo menos ${minimumPasswordLength} caracteres.`);
+  }
+}
+
+const entryTypeValues = ["ENTRADA", "SAIDA"] as const satisfies readonly EntryType[];
+const dailyRoleValues = ["AJUDANTE", "OPERADOR"] as const satisfies readonly DailyRole[];
+const employeeTypeValues = ["DIARISTA", "FICHADO"] as const satisfies readonly EmployeeType[];
 
 function drillingFormError(path: string, message: string): never {
   redirect(`${path}?erro=${encodeURIComponent(message)}`);
@@ -108,9 +118,7 @@ function readDrillingHoles(formData: FormData, errorPath: string, notes: string,
 }
 
 export async function loginAction(_: unknown, formData: FormData) {
-  await ensureUserSchema(prisma);
-
-  const email = requiredText(formData, "email").toLowerCase();
+  const email = readLoginIdentifier(formData, "email");
   const password = requiredText(formData, "password");
 
   const user = await prisma.user.findUnique({ where: { email } });
@@ -119,13 +127,9 @@ export async function loginAction(_: unknown, formData: FormData) {
   }
 
   const permissions = resolvePermissions(user);
-  await createSession({
-    userId: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    permissions
-  });
+  const remember = formData.get("remember") === "on";
+  await recordUserLogin(user.id);
+  await createSession({ userId: user.id }, remember);
 
   redirect(firstAllowedPath(permissions));
 }
@@ -140,8 +144,8 @@ export async function createSheetAction(formData: FormData) {
   const sheet = await prisma.financialSheet.create({
     data: {
       name: requiredText(formData, "name"),
-      purpose: String(formData.get("purpose") ?? "").trim() || null,
-      description: String(formData.get("description") ?? "").trim() || null
+      purpose: optionalText(formData, "purpose"),
+      description: optionalText(formData, "description")
     }
   });
 
@@ -167,8 +171,8 @@ export async function updateSheetAction(formData: FormData) {
     where: { id },
     data: {
       name: requiredText(formData, "name"),
-      purpose: String(formData.get("purpose") ?? "").trim() || null,
-      description: String(formData.get("description") ?? "").trim() || null
+      purpose: optionalText(formData, "purpose"),
+      description: optionalText(formData, "description")
     }
   });
 
@@ -181,18 +185,18 @@ export async function createEntryAction(formData: FormData) {
   await requireModuleWrite("financeiro");
 
   const sheetId = requiredText(formData, "sheetId");
-  const type = requiredText(formData, "type") as EntryType;
-  const date = String(formData.get("date") ?? "").trim();
+  const type = readEnum(formData, "type", entryTypeValues, "Tipo de lançamento inválido.");
+  const date = readDate(formData, "date");
 
   await prisma.financialEntry.create({
     data: {
       sheetId,
       type,
-      date: date ? new Date(`${date}T00:00:00.000Z`) : new Date(),
+      date,
       item: requiredText(formData, "item"),
-      quantity: String(formData.get("quantity") ?? "").trim() || null,
+      quantity: optionalText(formData, "quantity"),
       value: parseMoney(formData.get("value")),
-      notes: String(formData.get("notes") ?? "").trim() || null
+      notes: optionalText(formData, "notes")
     }
   });
 
@@ -215,35 +219,27 @@ export async function deleteEntryAction(formData: FormData) {
 
 
 function readDailyRole(formData: FormData): DailyRole {
-  const role = requiredText(formData, "role") as DailyRole;
-  if (role !== "AJUDANTE" && role !== "OPERADOR") {
-    throw new Error("Função inv?lida.");
-  }
-  return role;
+  return readEnum(formData, "role", dailyRoleValues, "Função inválida.");
 }
 
 function readEmployeeType(formData: FormData): EmployeeType {
-  return String(formData.get("employeeType") ?? "DIARISTA") === "FICHADO" ? "FICHADO" : "DIARISTA";
+  if (!formData.has("employeeType")) return "DIARISTA";
+  return readEnum(formData, "employeeType", employeeTypeValues, "Tipo de funcionário inválido.");
 }
 
-function optionalDecimal(value: FormDataEntryValue | null) {
-  const raw = String(value ?? "").trim();
-  return raw ? parseDecimal(raw) : null;
-}
 
 async function findPayrollEmployee(employeeName: string) {
-  await ensurePayrollSchema(prisma);
   return prisma.payrollEmployee.findUnique({ where: { name: employeeName } });
 }
 
 async function buildDailyEntryData(formData: FormData) {
-  const date = requiredText(formData, "date");
+  const date = readDate(formData, "date");
   const employeeName = requiredText(formData, "employeeName").toUpperCase();
   const employee = await findPayrollEmployee(employeeName);
   const requestedType = readEmployeeType(formData);
   const overtimeHours = parseDecimal(formData.get("overtimeHours"));
   const enteredOvertimeRate = optionalDecimal(formData.get("overtimeRate"));
-  const notes = String(formData.get("notes") ?? "").trim() || null;
+  const notes = optionalText(formData, "notes");
 
   if (employee?.type === "FICHADO" || requestedType === "FICHADO") {
     if (!employee || employee.type !== "FICHADO") {
@@ -260,7 +256,7 @@ async function buildDailyEntryData(formData: FormData) {
 
     const overtimeTotal = overtimeHours.mul(overtimeRate);
     return {
-      date: new Date(`${date}T00:00:00.000Z`),
+      date,
       employeeName,
       employeeId: employee.id,
       role: employee.role,
@@ -286,7 +282,7 @@ async function buildDailyEntryData(formData: FormData) {
   const dayTotal = dailyValue.add(overtimeTotal);
 
   return {
-    date: new Date(`${date}T00:00:00.000Z`),
+    date,
     employeeName,
     employeeId: employee?.id ?? null,
     role,
@@ -303,7 +299,6 @@ async function buildDailyEntryData(formData: FormData) {
 
 export async function createPayrollEmployeeAction(formData: FormData) {
   await requireModuleWrite("diarias");
-  await ensurePayrollSchema(prisma);
 
   const name = requiredText(formData, "name").toUpperCase();
   const role = readDailyRole(formData);
@@ -340,7 +335,6 @@ export async function createPayrollEmployeeAction(formData: FormData) {
 
 export async function updatePayrollEmployeeAction(formData: FormData) {
   await requireModuleWrite("diarias");
-  await ensurePayrollSchema(prisma);
 
   const id = requiredText(formData, "id");
   const name = requiredText(formData, "name").toUpperCase();
@@ -371,7 +365,6 @@ export async function updatePayrollEmployeeAction(formData: FormData) {
 
 export async function deletePayrollEmployeeAction(formData: FormData) {
   await requireModuleWrite("diarias");
-  await ensurePayrollSchema(prisma);
 
   const id = requiredText(formData, "id");
   await prisma.payrollEmployee.update({
@@ -384,7 +377,6 @@ export async function deletePayrollEmployeeAction(formData: FormData) {
 
 export async function createDailyEntryAction(formData: FormData) {
   await requireModuleWrite("diarias");
-  await ensurePayrollSchema(prisma);
 
   await prisma.dailyEntry.create({
     data: await buildDailyEntryData(formData)
@@ -409,7 +401,6 @@ export async function deleteDailyEntryAction(formData: FormData) {
 
 export async function updateDailyEntryAction(formData: FormData) {
   await requireModuleWrite("diarias");
-  await ensurePayrollSchema(prisma);
 
   const id = requiredText(formData, "id");
 
@@ -427,14 +418,13 @@ export async function updateDailyEntryAction(formData: FormData) {
 
 export async function addPayrollAdditionAction(formData: FormData) {
   await requireModuleWrite("diarias");
-  await ensurePayrollSchema(prisma);
 
   const employeeName = requiredText(formData, "employeeName").toUpperCase();
   const amount = parseDecimal(formData.get("amount"));
   const notes = requiredText(formData, "notes");
 
   if (amount.lte(0)) {
-    throw new Error("Informe um valor de acr?scimo maior que zero.");
+    throw new Error("Informe um valor de acréscimo maior que zero.");
   }
 
   await prisma.payrollAddition.create({
@@ -452,7 +442,6 @@ export async function addPayrollAdditionAction(formData: FormData) {
 
 export async function deletePayrollAdditionAction(formData: FormData) {
   await requireModuleWrite("diarias");
-  await ensurePayrollSchema(prisma);
 
   const id = requiredText(formData, "id");
   const employeeName = requiredText(formData, "employeeName").toUpperCase();
@@ -472,7 +461,6 @@ export async function deletePayrollAdditionAction(formData: FormData) {
 
 export async function addPayrollAdvanceAction(formData: FormData) {
   await requireModuleWrite("diarias");
-  await ensurePayrollSchema(prisma);
 
   const employeeName = requiredText(formData, "employeeName").toUpperCase();
   const amount = parseDecimal(formData.get("amount"));
@@ -497,7 +485,6 @@ export async function addPayrollAdvanceAction(formData: FormData) {
 
 export async function deletePayrollAdvanceAction(formData: FormData) {
   await requireModuleWrite("diarias");
-  await ensurePayrollSchema(prisma);
 
   const id = requiredText(formData, "id");
   const employeeName = requiredText(formData, "employeeName").toUpperCase();
@@ -517,7 +504,6 @@ export async function deletePayrollAdvanceAction(formData: FormData) {
 
 export async function payFortnightAction(formData: FormData) {
   await requireModuleWrite("diarias");
-  await ensurePayrollSchema(prisma);
 
   const employeeName = requiredText(formData, "employeeName").toUpperCase();
 
@@ -632,17 +618,15 @@ export async function payFortnightAction(formData: FormData) {
 
 export async function createDrillingRecordAction(formData: FormData) {
   await requireModuleWrite("perfuracao");
-  await ensureDrillingSchema(prisma);
-
-  const date = String(formData.get("date") ?? "").trim();
-  const notes = String(formData.get("notes") ?? "").trim();
+  const date = readDate(formData, "date");
+  const notes = optionalText(formData, "notes") ?? "";
   const downtimes = readDrillingDowntimes(formData, "/perfuracao");
   const holes = readDrillingHoles(formData, "/perfuracao", notes, downtimes.length > 0);
 
   try {
     await prisma.drillingRecord.create({
       data: {
-        date: date ? new Date(`${date}T00:00:00.000Z`) : new Date(),
+        date,
         teamName: requiredText(formData, "teamName").toUpperCase(),
         machineName: normalizeDrillingMachineName(requiredText(formData, "machineName")),
         bankName: normalizeDrillingBankName(requiredText(formData, "bankName")),
@@ -656,7 +640,7 @@ export async function createDrillingRecordAction(formData: FormData) {
       }
     });
   } catch {
-    redirect(`/perfuracao?erro=${encodeURIComponent("Não foi possível salvar. Sincronize o schema do banco e tente novamente.")}`);
+    redirect(`/perfuracao?erro=${encodeURIComponent("Não foi possível salvar. Rode npm run db:ensure-schema e tente novamente.")}`);
   }
 
   revalidatePath("/perfuracao");
@@ -664,12 +648,11 @@ export async function createDrillingRecordAction(formData: FormData) {
 
 export async function updateDrillingRecordAction(formData: FormData) {
   await requireModuleWrite("perfuracao");
-  await ensureDrillingSchema(prisma);
 
   const id = requiredText(formData, "id");
   const errorPath = `/perfuracao/${id}/editar`;
-  const date = String(formData.get("date") ?? "").trim();
-  const notes = String(formData.get("notes") ?? "").trim();
+  const date = readDate(formData, "date");
+  const notes = optionalText(formData, "notes") ?? "";
   const downtimes = readDrillingDowntimes(formData, errorPath);
   const holes = readDrillingHoles(formData, errorPath, notes, downtimes.length > 0);
 
@@ -680,7 +663,7 @@ export async function updateDrillingRecordAction(formData: FormData) {
       await tx.drillingRecord.update({
         where: { id },
         data: {
-          date: date ? new Date(`${date}T00:00:00.000Z`) : new Date(),
+          date,
           teamName: requiredText(formData, "teamName").toUpperCase(),
           machineName: normalizeDrillingMachineName(requiredText(formData, "machineName")),
           bankName: normalizeDrillingBankName(requiredText(formData, "bankName")),
@@ -713,7 +696,7 @@ export async function updateDrillingRecordAction(formData: FormData) {
       }
     });
   } catch {
-    drillingFormError(errorPath, "Não foi possível atualizar a ficha. Sincronize o schema do banco e tente novamente.");
+    drillingFormError(errorPath, "Não foi possível atualizar a ficha. Rode npm run db:ensure-schema e tente novamente.");
   }
 
   revalidatePath("/perfuracao");
@@ -723,7 +706,6 @@ export async function updateDrillingRecordAction(formData: FormData) {
 
 export async function deleteDrillingRecordAction(formData: FormData) {
   await requireModuleWrite("perfuracao");
-  await ensureDrillingSchema(prisma);
   const id = requiredText(formData, "id");
   await prisma.drillingRecord.delete({ where: { id } });
   revalidatePath("/perfuracao");
@@ -735,47 +717,25 @@ export async function deleteDrillingRecordAction(formData: FormData) {
 
 
 function readUserRole(formData: FormData): UserRole {
-  const role = requiredText(formData, "role") as UserRole;
-  if (!["ADMIN", "FINANCEIRO", "RH", "PERFURACAO", "LEITOR"].includes(role)) {
-    throw new Error("Tipo de usuário inválido.");
-  }
-  return role;
-}
-
-function checkbox(formData: FormData, name: string) {
-  return formData.get(name) === "on";
-}
-
-function readUserPermissionData(formData: FormData, role: UserRole) {
-  if (role === "ADMIN") return defaultPermissionsForRole("ADMIN");
-
-  return {
-    canAccessFinance: checkbox(formData, "canAccessFinance"),
-    canWriteFinance: checkbox(formData, "canWriteFinance"),
-    canAccessDaily: checkbox(formData, "canAccessDaily"),
-    canWriteDaily: checkbox(formData, "canWriteDaily"),
-    canAccessDrilling: checkbox(formData, "canAccessDrilling"),
-    canWriteDrilling: checkbox(formData, "canWriteDrilling"),
-    canManageUsers: checkbox(formData, "canManageUsers")
-  };
+  return readEnum(formData, "role", userRoleValues, "Tipo de usuário inválido.");
 }
 
 export async function createUserAction(formData: FormData) {
   await requireAdmin();
-  await ensureUserSchema(prisma);
 
   const role = readUserRole(formData);
   const password = requiredText(formData, "password");
+  assertStrongPassword(password);
   const passwordHash = await bcrypt.hash(password, 10);
   const permissions = readUserPermissionData(formData, role);
 
   await prisma.user.create({
     data: {
       name: requiredText(formData, "name"),
-      email: requiredText(formData, "email").toLowerCase(),
+      email: readLoginIdentifier(formData, "email"),
       passwordHash,
       role,
-      isActive: checkbox(formData, "isActive"),
+      isActive: readBoolean(formData, "isActive"),
       ...permissions
     }
   });
@@ -786,20 +746,20 @@ export async function createUserAction(formData: FormData) {
 
 export async function updateUserAction(formData: FormData) {
   await requireAdmin();
-  await ensureUserSchema(prisma);
 
   const id = requiredText(formData, "id");
   const role = readUserRole(formData);
   const password = String(formData.get("password") ?? "").trim();
+  if (password) assertStrongPassword(password);
   const permissions = readUserPermissionData(formData, role);
 
   await prisma.user.update({
     where: { id },
     data: {
       name: requiredText(formData, "name"),
-      email: requiredText(formData, "email").toLowerCase(),
+      email: readLoginIdentifier(formData, "email"),
       role,
-      isActive: checkbox(formData, "isActive"),
+      isActive: readBoolean(formData, "isActive"),
       ...permissions,
       ...(password ? { passwordHash: await bcrypt.hash(password, 10) } : {})
     }
@@ -811,7 +771,6 @@ export async function updateUserAction(formData: FormData) {
 
 export async function toggleUserActiveAction(formData: FormData) {
   const session = await requireAdmin();
-  await ensureUserSchema(prisma);
 
   const id = requiredText(formData, "id");
   if (id === session.userId) {
@@ -820,7 +779,7 @@ export async function toggleUserActiveAction(formData: FormData) {
 
   await prisma.user.update({
     where: { id },
-    data: { isActive: checkbox(formData, "isActive") }
+    data: { isActive: readBoolean(formData, "isActive") }
   });
 
   revalidatePath("/usuarios");
@@ -828,7 +787,6 @@ export async function toggleUserActiveAction(formData: FormData) {
 
 export async function deleteUserAction(formData: FormData) {
   const session = await requireAdmin();
-  await ensureUserSchema(prisma);
 
   const id = requiredText(formData, "id");
   if (id === session.userId) {

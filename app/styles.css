@@ -504,6 +504,37 @@ button:disabled {
   color: var(--muted);
 }
 
+.remember-login {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+}
+
+.remember-login input {
+  width: 18px;
+  min-height: 18px;
+  flex: 0 0 auto;
+  accent-color: var(--brand);
+}
+
+.remember-login span {
+  display: grid;
+  gap: 2px;
+}
+
+.remember-login strong {
+  color: var(--ink);
+}
+
+.remember-login small {
+  color: var(--muted);
+}
+
 .app-shell {
   min-height: 100vh;
   display: grid;
@@ -3177,6 +3208,37 @@ textarea:focus {
 .user-card-head p {
   color: var(--muted);
   margin-top: 4px;
+}
+
+.user-usage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr));
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.user-usage-grid div {
+  display: grid;
+  gap: 4px;
+}
+
+.user-usage-grid span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.user-usage-grid strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.user-usage-grid small {
+  color: var(--muted);
 }
 
 .status-pill {

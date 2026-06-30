@@ -8,7 +8,6 @@ import { prisma } from "@/lib/prisma";
 import { requireModuleWrite } from "@/lib/session";
 import { decimalToNumber } from "@/lib/format";
 import { toDateInput } from "@/lib/diarias";
-import { ensurePayrollSchema } from "@/lib/payroll-schema";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -17,7 +16,6 @@ type Props = {
 export default async function EditarDiariaPage({ params }: Props) {
   const session = await requireModuleWrite("diarias");
   const { id } = await params;
-  await ensurePayrollSchema(prisma);
 
   const [entry, employees] = await Promise.all([
     prisma.dailyEntry.findUnique({ where: { id }, include: { employee: true } }),

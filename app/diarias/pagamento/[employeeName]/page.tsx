@@ -5,12 +5,12 @@ import { notFound } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { addPayrollAdditionAction, addPayrollAdvanceAction, deletePayrollAdditionAction, deletePayrollAdvanceAction } from "@/app/actions";
 import { AppShell } from "@/components/app-shell";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { ConfirmPaymentForm } from "@/components/confirm-payment-form";
 import { PageHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { requireModule } from "@/lib/session";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/format";
-import { ensurePayrollSchema } from "@/lib/payroll-schema";
 
 type Props = {
   params: Promise<{ employeeName: string }>;
@@ -21,8 +21,6 @@ export default async function PagamentoDiariaPage({ params }: Props) {
   const { employeeName: rawEmployeeName } = await params;
   const employeeName = decodeURIComponent(rawEmployeeName);
   const canWrite = session.permissions.canWriteDaily;
-
-  await ensurePayrollSchema(prisma);
 
   const [entries, advances, additions] = await Promise.all([
     prisma.dailyEntry.findMany({
@@ -100,19 +98,19 @@ export default async function PagamentoDiariaPage({ params }: Props) {
           <form className="advance-form" action={addPayrollAdditionAction}>
             <input type="hidden" name="employeeName" value={employeeName} />
             <label>
-              Valor do acr?scimo
+              Valor do acréscimo
               <input name="amount" placeholder="0,00" required />
             </label>
             <label className="wide-field">
               Observação / motivo
               <input name="notes" placeholder="Ex: produção, ajuste, premiação..." required />
             </label>
-            <button type="submit">Salvar acr?scimo</button>
+            <button type="submit">Salvar acréscimo</button>
           </form>
 
           <div className="advance-list">
             {additions.length === 0 ? (
-              <p className="muted-text">Nenhum acr?scimo pendente para somar neste pagamento.</p>
+              <p className="muted-text">Nenhum acréscimo pendente para somar neste pagamento.</p>
             ) : additions.map((addition) => (
               <article className="advance-item" key={addition.id}>
                 <div>
@@ -123,9 +121,9 @@ export default async function PagamentoDiariaPage({ params }: Props) {
                 <form action={deletePayrollAdditionAction}>
                   <input type="hidden" name="id" value={addition.id} />
                   <input type="hidden" name="employeeName" value={employeeName} />
-                  <button className="icon-danger" type="submit" aria-label="Remover acr?scimo pendente">
+                  <ConfirmSubmitButton className="icon-danger" aria-label="Remover acréscimo pendente" message="Remover este acréscimo pendente?">
                     <Trash2 size={16} />
-                  </button>
+                  </ConfirmSubmitButton>
                 </form>
               </article>
             ))}
@@ -142,9 +140,9 @@ export default async function PagamentoDiariaPage({ params }: Props) {
                 <form action={deletePayrollAdvanceAction}>
                   <input type="hidden" name="id" value={advance.id} />
                   <input type="hidden" name="employeeName" value={employeeName} />
-                  <button className="icon-danger" type="submit" aria-label="Remover vale pendente">
+                  <ConfirmSubmitButton className="icon-danger" aria-label="Remover vale pendente" message="Remover este vale pendente?">
                     <Trash2 size={16} />
-                  </button>
+                  </ConfirmSubmitButton>
                 </form>
               </article>
             ))}

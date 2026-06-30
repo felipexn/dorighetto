@@ -1,15 +1,15 @@
 import Link from "next/link";
 import { ChevronDown, Download, Eye, FileClock, Save, Trash2, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PaymentEntryForm } from "@/components/payment-entry-form";
 import { PaymentsTable } from "@/components/payments-table";
 import { PageHeader } from "@/components/ui";
-import { createPayrollEmployeeAction, deleteDailyEntryAction, deletePayrollEmployeeAction, updatePayrollEmployeeAction } from "@/app/actions";
+import { createPayrollEmployeeAction, deletePayrollEmployeeAction, updatePayrollEmployeeAction } from "@/app/actions";
 import { prisma } from "@/lib/prisma";
 import { requireModule } from "@/lib/session";
 import { toDateInput } from "@/lib/diarias";
 import { decimalToNumber, formatCurrency, formatDate } from "@/lib/format";
-import { ensurePayrollSchema } from "@/lib/payroll-schema";
 
 type SearchParams = Promise<{
   funcionario?: string;
@@ -21,7 +21,6 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
   const session = await requireModule("diarias");
   const params = await searchParams;
   const canWrite = session.permissions.canWriteDaily;
-  await ensurePayrollSchema(prisma);
 
   const [entries, employees, dailyNames] = await Promise.all([
     prisma.dailyEntry.findMany({
@@ -161,7 +160,7 @@ export default async function DiariasPage({ searchParams }: { searchParams: Sear
                 </form>
                 <form action={deletePayrollEmployeeAction}>
                   <input type="hidden" name="id" value={employee.id} />
-                  <button className="danger-button" type="submit"><Trash2 size={16} /> Remover da lista</button>
+                  <ConfirmSubmitButton className="danger-button" message={`Remover ${employee.name} da lista de fichados ativos?`}><Trash2 size={16} /> Remover da lista</ConfirmSubmitButton>
                 </form>
               </article>
             ))}
