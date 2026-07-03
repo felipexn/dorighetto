@@ -77,7 +77,7 @@ export function PaymentEntryForm({ today, employeeNames, fichados }: Props) {
       ) : (
         <>
           <input type="hidden" name="employeeType" value="DIARISTA" />
-          <label>Função<select name="role" defaultValue="AJUDANTE"><option>AJUDANTE</option><option>OPERADOR</option></select></label>
+          <label>Função<select name="role" defaultValue="" required><option value="" disabled>Selecione</option><option>AJUDANTE</option><option>OPERADOR</option></select></label>
           <label>Diária<input name="dailyValue" placeholder="0,00" required /></label>
           <label>Horas extras<input name="overtimeHours" placeholder="0" /></label>
         </>
