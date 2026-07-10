@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { PrismaClient, UserRole } from "@prisma/client";
 
 const prisma = new PrismaClient();
-const minimumPasswordLength = 12;
+const minimumPasswordLength = 8;
 
 function requiredEnv(name: string) {
   const value = process.env[name]?.trim();

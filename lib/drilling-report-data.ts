@@ -2,6 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { decimalToNumber, formatDate } from "@/lib/format";
 import { normalizeDrillingBankName, normalizeDrillingMachineName, normalizeDrillingShift, formatDrillingShift } from "@/lib/drilling";
 
+const EXPECTED_DAILY_OPERATION_HOURS = 8;
+
 export type ChartItem = { label: string; value: number };
 export type DrillingReportRecord = {
   date: string;
@@ -10,6 +12,8 @@ export type DrillingReportRecord = {
   bankName: string;
   activityCode: string;
   shift: string;
+  motorStart: string;
+  motorEnd: string;
   holes: { meters: number }[];
   downtimes: { reason: string; hours: number }[];
 };
@@ -59,6 +63,39 @@ export function recordMeters(record: DrillingReportRecord) {
 
 export function hoursLabel(value: number) {
   return `${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} h`;
+}
+
+export function metersPerHourLabel(value: number) {
+  return value > 0
+    ? `${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m/h`
+    : "-";
+}
+
+export function availabilityLabel(value: number) {
+  return value > 0
+    ? `${value.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`
+    : "Não calculado";
+}
+
+function parseMotorHour(value: string) {
+  const trimmed = value.trim().replace(/\s/g, "");
+  if (!trimmed) return undefined;
+
+  const normalized = trimmed.includes(",")
+    ? trimmed.replace(/\./g, "").replace(",", ".")
+    : /^\d{1,3}(\.\d{3})+$/.test(trimmed)
+      ? trimmed.replace(/\./g, "")
+      : trimmed;
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+export function recordMotorHours(record: DrillingReportRecord) {
+  const start = parseMotorHour(record.motorStart);
+  const end = parseMotorHour(record.motorEnd);
+  if (start === undefined || end === undefined || end <= start) return 0;
+  return end - start;
 }
 
 export function recordDowntimeHours(record: DrillingReportRecord) {
@@ -113,6 +150,23 @@ function groupMetersByDate(records: DrillingReportRecord[]) {
     .map(([label, value]) => ({ label: formatDate(new Date(`${label}T00:00:00.000Z`)), value }));
 }
 
+function groupProductionPerHourByRecords(records: DrillingReportRecord[], key: "teamName" | "machineName") {
+  const map = new Map<string, { meters: number; hours: number }>();
+  for (const record of records) {
+    const hours = recordMotorHours(record);
+    if (hours <= 0) continue;
+    const label = key === "machineName" ? normalizeDrillingMachineName(record.machineName) : record[key];
+    const current = map.get(label) ?? { meters: 0, hours: 0 };
+    current.meters += recordMeters(record);
+    current.hours += hours;
+    map.set(label, current);
+  }
+  return Array.from(map.entries())
+    .map(([label, item]) => ({ label, value: item.hours > 0 ? item.meters / item.hours : 0 }))
+    .filter((item) => item.value > 0)
+    .sort((a, b) => b.value - a.value);
+}
+
 function groupDowntimeByReason(records: DrillingReportRecord[]) {
   const map = new Map<string, number>();
   for (const record of records) {
@@ -145,15 +199,23 @@ export function summarizeRecords(records: DrillingReportRecord[]) {
   const totalMetros = records.reduce((acc, record) => acc + recordMeters(record), 0);
   const totalFuros = records.reduce((acc, record) => acc + record.holes.length, 0);
   const totalHorasParadas = records.reduce((acc, record) => acc + recordDowntimeHours(record), 0);
+  const totalHorasMotor = records.reduce((acc, record) => acc + recordMotorHours(record), 0);
+  const fichasComHorimetro = records.filter((record) => recordMotorHours(record) > 0).length;
+  const totalHorasPrevistas = fichasComHorimetro * EXPECTED_DAILY_OPERATION_HOURS;
+  const disponibilidade = totalHorasPrevistas > 0 ? (totalHorasMotor / totalHorasPrevistas) * 100 : 0;
+  const totalMetrosComHorimetro = records.reduce((acc, record) => recordMotorHours(record) > 0 ? acc + recordMeters(record) : acc, 0);
   const uniqueDateCount = new Set(records.map((record) => record.date.slice(0, 10))).size;
   const mediaDia = uniqueDateCount > 0 ? totalMetros / uniqueDateCount : 0;
   const mediaFicha = records.length > 0 ? totalMetros / records.length : 0;
   const mediaFuro = totalFuros > 0 ? totalMetros / totalFuros : 0;
+  const mediaMetroHora = totalHorasMotor > 0 ? totalMetrosComHorimetro / totalHorasMotor : 0;
   const mediaHorasParadasFicha = records.length > 0 ? totalHorasParadas / records.length : 0;
   const byTeam = groupMetersByRecords(records, "teamName");
   const byBank = groupMetersByRecords(records, "bankName");
   const byMachine = groupMetersByRecords(records, "machineName");
   const byActivity = groupMetersByRecords(records, "activityCode");
+  const productionPerHourByTeam = groupProductionPerHourByRecords(records, "teamName");
+  const productionPerHourByMachine = groupProductionPerHourByRecords(records, "machineName");
   const byDowntimeReason = groupDowntimeByReason(records);
   const downtimeByTeam = groupDowntimeByRecords(records, "teamName");
   const downtimeByBank = groupDowntimeByRecords(records, "bankName");
@@ -165,15 +227,22 @@ export function summarizeRecords(records: DrillingReportRecord[]) {
     totalMetros,
     totalFuros,
     totalHorasParadas,
+    totalHorasMotor,
+    totalHorasPrevistas,
+    disponibilidade,
+    totalMetrosComHorimetro,
     uniqueDateCount,
     mediaDia,
     mediaFicha,
     mediaFuro,
+    mediaMetroHora,
     mediaHorasParadasFicha,
     byTeam,
     byBank,
     byMachine,
     byActivity,
+    productionPerHourByTeam,
+    productionPerHourByMachine,
     byDowntimeReason,
     downtimeByTeam,
     downtimeByBank,
@@ -183,6 +252,8 @@ export function summarizeRecords(records: DrillingReportRecord[]) {
     topTeam: byTeam[0],
     topBank: byBank[0],
     topMachine: byMachine[0],
+    topHourlyTeam: productionPerHourByTeam[0],
+    topHourlyMachine: productionPerHourByMachine[0],
     topDowntimeReason: byDowntimeReason[0]
   };
 }
@@ -264,6 +335,8 @@ export async function getDrillingReportData(prisma: PrismaClient, rawFilters: Dr
       bankName: normalizeDrillingBankName(record.bankName),
       activityCode: record.activityCode,
       shift: record.shift,
+      motorStart: record.motorStart,
+      motorEnd: record.motorEnd,
       holes: record.holes.map((hole) => ({ meters: decimalToNumber(hole.meters) })),
       downtimes: record.downtimes.map((downtime) => ({
         reason: downtime.reason,

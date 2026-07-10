@@ -42,7 +42,11 @@ const statements = [
   `create index if not exists drilling_holes_record_id_idx
     on drilling_holes(record_id)`,
   `create index if not exists drilling_downtimes_record_id_idx
-    on drilling_downtimes(record_id)`
+    on drilling_downtimes(record_id)`,
+  `update drilling_holes
+    set hole_code = 'AUX', updated_at = now()
+    where upper(trim(hole_code)) in ('0', 'F0', 'AUX')
+      and hole_code <> 'AUX'`
 ];
 
 export async function ensureDrillingSchema(prisma: PrismaClient) {

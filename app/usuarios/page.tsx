@@ -69,7 +69,7 @@ export default async function UsuariosPage() {
           <div className="user-form-fields">
             <label>Nome<input name="name" placeholder="Ex: Najara" required /></label>
             <label>Login ou e-mail<input name="email" placeholder="Ex: najara" required /></label>
-            <label>Senha<input name="password" type="password" minLength={12} placeholder="Mínimo de 12 caracteres" required /></label>
+            <label>Senha<input name="password" type="password" minLength={8} placeholder="Mínimo de 8 caracteres" title="A senha deve ter pelo menos 8 caracteres." required /></label>
             <label>Tipo de acesso<RoleSelect /></label>
           </div>
           <PermissionChecks permissions={defaultReaderPermissions} />
@@ -117,7 +117,7 @@ export default async function UsuariosPage() {
                 <div className="user-form-fields">
                   <label>Nome<input name="name" defaultValue={user.name} required /></label>
                   <label>Login ou e-mail<input name="email" defaultValue={user.email} required /></label>
-                  <label>Nova senha <small>Deixe em branco para manter</small><input name="password" type="password" minLength={12} placeholder="Opcional, mínimo 12 caracteres" /></label>
+                  <label>Nova senha <small>Deixe em branco para manter</small><input name="password" type="password" minLength={8} placeholder="Opcional, mínimo 8 caracteres" title="A nova senha deve ter pelo menos 8 caracteres." /></label>
                   <label>Tipo de acesso<RoleSelect defaultValue={user.role} /></label>
                 </div>
                 <label className="permission-check compact-check">

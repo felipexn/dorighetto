@@ -20,6 +20,11 @@ export function normalizeDrillingBankName(value: string) {
   return trimmed;
 }
 
+export function normalizeDrillingHoleCode(value: string) {
+  const normalized = value.trim().toUpperCase();
+  return normalized === "0" || normalized === "F0" || normalized === "AUX" ? "AUX" : normalized;
+}
+
 export function normalizeDrillingShift(value: string) {
   const normalized = value
     .trim()

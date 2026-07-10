@@ -2428,6 +2428,72 @@ textarea:focus {
   border-color: var(--brand);
 }
 
+.drill-month-list {
+  display: grid;
+  gap: 16px;
+}
+
+.drill-month-group {
+  border: 1px solid #dfd2b9;
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.drill-month-group > summary,
+.drill-record-group > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.drill-month-group > summary::-webkit-details-marker,
+.drill-record-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.drill-month-group > summary {
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 20px;
+  background: #fbf6ea;
+}
+
+.drill-month-group > summary div,
+.drill-record-title,
+.drill-record-total {
+  display: grid;
+  gap: 4px;
+}
+
+.drill-month-group > summary strong {
+  font-size: 20px;
+}
+
+.drill-month-group > summary span,
+.drill-record-group > summary span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.drill-month-group > summary svg,
+.drill-record-group > summary svg {
+  flex: 0 0 auto;
+  color: var(--muted);
+  transition: transform 0.18s ease;
+}
+
+.drill-month-group[open] > summary > svg,
+.drill-record-group[open] > summary > svg {
+  transform: rotate(180deg);
+}
+
+.drill-month-group > .drill-date-list {
+  padding: 14px;
+  border-top: 1px solid #dfd2b9;
+}
 .drill-date-list {
   display: grid;
   gap: 12px;
@@ -2485,6 +2551,52 @@ textarea:focus {
   padding: 0 12px 12px;
 }
 
+.drill-record-group {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.drill-record-group > summary {
+  min-height: 70px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px;
+}
+
+.drill-record-title,
+.drill-record-total {
+  min-width: 0;
+}
+
+.drill-record-title span {
+  overflow-wrap: anywhere;
+}
+
+.drill-record-total {
+  justify-items: end;
+  text-align: right;
+}
+
+.drill-record-body {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.drill-record-body > p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.drill-record-body > .drill-holes {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
 .drill-card {
   display: grid;
   gap: 10px;
@@ -3066,6 +3178,42 @@ textarea:focus {
     gap: 6px;
   }
 
+  .drill-month-group > summary {
+    align-items: flex-start;
+    min-height: auto;
+    padding: 16px;
+  }
+
+  .drill-month-group > summary strong {
+    font-size: 18px;
+  }
+
+  .drill-month-group > .drill-date-list {
+    padding: 10px;
+  }
+
+  .drill-record-group > summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    min-height: auto;
+    padding: 13px;
+  }
+
+  .drill-record-group > summary > svg {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .drill-record-total {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .drill-record-body {
+    padding: 10px;
+  }
   .drill-date-group > summary,
   .drill-holes-toggle > summary {
     align-items: flex-start;

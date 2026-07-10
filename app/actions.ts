@@ -9,10 +9,15 @@ import { createSession, destroySession, requireAdmin, requireModuleWrite } from 
 import { recordUserLogin } from "@/lib/user-activity";
 import { optionalDecimal, optionalText, parseDecimal, parseMoney, readBoolean, readDate, readEnum, readLoginIdentifier, requiredText } from "@/lib/form-validation";
 import { makeReceiptNumber } from "@/lib/diarias";
-import { normalizeDrillingBankName, normalizeDrillingMachineName, normalizeDrillingShift } from "@/lib/drilling";
+import {
+  normalizeDrillingBankName,
+  normalizeDrillingHoleCode,
+  normalizeDrillingMachineName,
+  normalizeDrillingShift
+} from "@/lib/drilling";
 import { firstAllowedPath, readUserPermissionData, resolvePermissions, userRoleValues } from "@/lib/user-permissions";
 
-const minimumPasswordLength = 12;
+const minimumPasswordLength = 8;
 
 function assertStrongPassword(password: string) {
   if (password.length < minimumPasswordLength) {
@@ -26,14 +31,6 @@ const employeeTypeValues = ["DIARISTA", "FICHADO"] as const satisfies readonly E
 
 function drillingFormError(path: string, message: string): never {
   redirect(`${path}?erro=${encodeURIComponent(message)}`);
-}
-
-function normalizeDrillingHoleCode(value: string) {
-  const raw = value.trim().toUpperCase();
-  if (raw === "AUX") return "AUX";
-
-  const digits = raw.replace(/^F/i, "").replace(/\D/g, "");
-  return digits ? `F${digits}` : "";
 }
 
 function readDrillingDowntimes(formData: FormData, errorPath: string) {

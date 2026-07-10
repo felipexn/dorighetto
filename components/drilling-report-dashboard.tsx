@@ -6,7 +6,7 @@ import { Award, BarChart3, CalendarDays, Clock, Gauge, Target, TrendingUp } from
 import { PrintReportButton } from "@/components/print-report-button";
 import { drillingShiftOptions } from "@/lib/drilling";
 import type { ChartItem, DrillingReportData, DrillingReportFilters, DrillingReportSummary } from "@/lib/drilling-report-data";
-import { hoursLabel, metersLabel, shortNumber } from "@/lib/drilling-report-data";
+import { availabilityLabel, hoursLabel, metersLabel, metersPerHourLabel, shortNumber } from "@/lib/drilling-report-data";
 
 type ChartStyle = CSSProperties & {
   "--bar-width"?: string;
@@ -119,6 +119,7 @@ function OperationalSummary({ summary, recordCount }: { summary: DrillingReportS
       <div className="summary-highlight-list">
         <div><span>Banco mais produtivo</span><strong>{summary.topBank?.label ?? "-"}</strong><small>{summary.topBank ? metersLabel(summary.topBank.value) : "Sem dados"}</small></div>
         <div><span>Perfuratriz líder</span><strong>{summary.topMachine?.label ?? "-"}</strong><small>{summary.topMachine ? metersLabel(summary.topMachine.value) : "Sem dados"}</small></div>
+        <div><span>Melhor produção/hora</span><strong>{summary.topHourlyTeam?.label ?? "-"}</strong><small>{summary.topHourlyTeam ? metersPerHourLabel(summary.topHourlyTeam.value) : "Sem uso calculado"}</small></div>
         <div><span>Fichas e furos</span><strong>{recordCount} fichas</strong><small>{summary.totalFuros} furos registrados</small></div>
       </div>
     </section>
@@ -297,6 +298,8 @@ export function DrillingReportDashboard({ initialData }: Props) {
             <div><span>Média por dia</span><strong>{metersLabel(data.reportSummary.mediaDia)}</strong></div>
             <div><span>Média por ficha</span><strong>{metersLabel(data.reportSummary.mediaFicha)}</strong></div>
             <div><span>Média por furo</span><strong>{metersLabel(data.reportSummary.mediaFuro)}</strong></div>
+            <div><span>Produção por hora</span><strong>{metersPerHourLabel(data.reportSummary.mediaMetroHora)}</strong><small>{data.reportSummary.totalHorasMotor > 0 ? `${hoursLabel(data.reportSummary.totalHorasMotor)} de uso no período` : "Sem uso calculado válido"}</small></div>
+            <div><span>Disponibilidade</span><strong>{availabilityLabel(data.reportSummary.disponibilidade)}</strong><small>{data.reportSummary.totalHorasPrevistas > 0 ? `${hoursLabel(data.reportSummary.totalHorasMotor)} / ${hoursLabel(data.reportSummary.totalHorasPrevistas)}` : "Jornada padrão: 8h"}</small></div>
             <div><span>Horas paradas</span><strong>{hoursLabel(data.reportSummary.totalHorasParadas)}</strong></div>
             <div><span>Média de parada/ficha</span><strong>{hoursLabel(data.reportSummary.mediaHorasParadasFicha)}</strong></div>
             <div><span>Principal motivo de parada</span><strong>{data.reportSummary.topDowntimeReason?.label ?? "-"}</strong><small>{data.reportSummary.topDowntimeReason ? hoursLabel(data.reportSummary.topDowntimeReason.value) : "Sem dados"}</small></div>
@@ -311,6 +314,8 @@ export function DrillingReportDashboard({ initialData }: Props) {
             <ReportRanking title="Bancos no período" items={data.reportSummary.byBank} />
             <ReportRanking title="Perfuratrizes no período" items={data.reportSummary.byMachine} />
             <ReportRanking title="Atividades no período" items={data.reportSummary.byActivity} />
+            <ReportRanking title="Produção/hora por equipe" items={data.reportSummary.productionPerHourByTeam} valueLabel={metersPerHourLabel} />
+            <ReportRanking title="Produção/hora por perfuratriz" items={data.reportSummary.productionPerHourByMachine} valueLabel={metersPerHourLabel} />
             <ReportRanking title="Paradas por motivo" items={data.reportSummary.byDowntimeReason} valueLabel={hoursLabel} />
             <ReportRanking title="Equipes com horas paradas" items={data.reportSummary.downtimeByTeam} valueLabel={hoursLabel} />
           </div>
@@ -364,6 +369,8 @@ export function DrillingReportDashboard({ initialData }: Props) {
         <MetricCard icon={<TrendingUp size={18} />} label="Média por dia" value={metersLabel(data.filteredSummary.mediaDia)} />
         <MetricCard icon={<Gauge size={18} />} label="Média por ficha" value={metersLabel(data.filteredSummary.mediaFicha)} />
         <MetricCard icon={<BarChart3 size={18} />} label="Média por furo" value={metersLabel(data.filteredSummary.mediaFuro)} />
+        <MetricCard icon={<Gauge size={18} />} label="Produção por hora" value={metersPerHourLabel(data.filteredSummary.mediaMetroHora)} />
+        <MetricCard icon={<Clock size={18} />} label="Disponibilidade" value={availabilityLabel(data.filteredSummary.disponibilidade)} />
         <MetricCard icon={<Clock size={18} />} label="Horas paradas" value={hoursLabel(data.filteredSummary.totalHorasParadas)} />
         <MetricCard icon={<Award size={18} />} label="Equipe líder" value={data.filteredSummary.topTeam?.label ?? "-"} />
         <MetricCard icon={<CalendarDays size={18} />} label="Melhor dia" value={data.filteredSummary.bestDay?.label ?? "-"} />
