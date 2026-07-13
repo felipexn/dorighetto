@@ -254,3 +254,15 @@ model DrillingDowntime {
   @@index([recordId])
   @@map("drilling_downtimes")
 }
+model DrillingFuelEntry {
+  id          String   @id @default(cuid())
+  date        DateTime
+  machineName String   @map("machine_name")
+  quantity    Decimal  @db.Decimal(10, 2)
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([date, machineName])
+  @@map("drilling_fuel_entries")
+}

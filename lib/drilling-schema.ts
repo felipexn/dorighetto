@@ -33,12 +33,23 @@ const statements = [
     created_at timestamp(3) not null default now(),
     updated_at timestamp(3) not null default now()
   )`,
+  `create table if not exists drilling_fuel_entries (
+    id text primary key,
+    date timestamp(3) not null,
+    machine_name text not null,
+    quantity numeric(10, 2) not null,
+    notes text,
+    created_at timestamp(3) not null default now(),
+    updated_at timestamp(3) not null default now()
+  )`,
   `alter table drilling_records
     add column if not exists shift text not null default 'DIA'`,
   `create index if not exists drilling_records_date_team_name_idx
     on drilling_records(date, team_name)`,
   `create index if not exists drilling_records_shift_idx
     on drilling_records(shift)`,
+  `create index if not exists drilling_fuel_entries_date_machine_name_idx
+    on drilling_fuel_entries(date, machine_name)`,
   `create index if not exists drilling_holes_record_id_idx
     on drilling_holes(record_id)`,
   `create index if not exists drilling_downtimes_record_id_idx

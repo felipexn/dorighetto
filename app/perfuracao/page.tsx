@@ -4,7 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader } from "@/components/ui";
 import { PerfuracaoFormFields } from "@/components/perfuracao-form";
-import { createDrillingRecordAction, deleteDrillingRecordAction } from "@/app/actions";
+import { createDrillingFuelEntryAction, createDrillingRecordAction, deleteDrillingRecordAction } from "@/app/actions";
 import { prisma } from "@/lib/prisma";
 import { requireModule } from "@/lib/session";
 import { decimalToNumber, formatDate } from "@/lib/format";
@@ -222,6 +222,28 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
       ) : null}
 
 
+
+      {canWrite && !setupWarning ? (
+        <section className="panel diesel-entry-card section-gap">
+          <div>
+            <span className="eyebrow">Diesel</span>
+            <h2>Lançar diesel</h2>
+            <p>Registre abastecimentos por perfuratriz sem misturar com a ficha de furos.</p>
+          </div>
+          <form className="diesel-entry-form" action={createDrillingFuelEntryAction}>
+            <label>Data<input name="date" type="date" defaultValue={toDateInput(new Date())} required /></label>
+            <label>Perfuratriz
+              <input name="machineName" list="fuel-machine-options" placeholder="Ex: 80" defaultValue={selectedMachine} required />
+              <datalist id="fuel-machine-options">
+                {machineOptions.map((machine) => <option key={machine} value={machine} />)}
+              </datalist>
+            </label>
+            <label>Quantidade<input name="quantity" inputMode="decimal" placeholder="Ex: 120" required /></label>
+            <label>Observação<input name="notes" placeholder="Opcional" /></label>
+            <button type="submit">Salvar diesel</button>
+          </form>
+        </section>
+      ) : null}
       {canWrite && !setupWarning ? (
         <form className="panel perf-form" action={createDrillingRecordAction}>
           <label>Data<input name="date" type="date" defaultValue={toDateInput(new Date())} /></label>

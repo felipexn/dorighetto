@@ -302,10 +302,6 @@ export async function createPayrollEmployeeAction(formData: FormData) {
   const monthlySalary = optionalDecimal(formData.get("monthlySalary"));
   const defaultOvertimeRate = optionalDecimal(formData.get("defaultOvertimeRate"));
 
-  if (!monthlySalary || monthlySalary.lte(0)) {
-    throw new Error("Informe o salário mensal de referência do funcionário fichado.");
-  }
-
   await prisma.payrollEmployee.upsert({
     where: { name },
     create: {
@@ -613,6 +609,33 @@ export async function payFortnightAction(formData: FormData) {
   redirect(`/diarias/fechamento/${closure.id}`);
 }
 
+export async function createDrillingFuelEntryAction(formData: FormData) {
+  await requireModuleWrite("perfuracao");
+
+  const date = readDate(formData, "date");
+  const machineName = normalizeDrillingMachineName(requiredText(formData, "machineName"));
+  const quantity = parseDecimal(formData.get("quantity"));
+  const notes = optionalText(formData, "notes");
+
+  if (quantity.lte(0)) {
+    redirect(`/perfuracao?erro=${encodeURIComponent("Informe a quantidade de diesel.")}`);
+  }
+
+  try {
+    await prisma.drillingFuelEntry.create({
+      data: {
+        date,
+        machineName,
+        quantity,
+        notes
+      }
+    });
+  } catch {
+    redirect(`/perfuracao?erro=${encodeURIComponent("Não foi possível salvar o diesel. Rode npm run db:ensure-schema e tente novamente.")}`);
+  }
+
+  revalidatePath("/perfuracao");
+}
 export async function createDrillingRecordAction(formData: FormData) {
   await requireModuleWrite("perfuracao");
   const date = readDate(formData, "date");

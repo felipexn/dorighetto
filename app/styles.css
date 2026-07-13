@@ -2427,6 +2427,32 @@ textarea:focus {
 .quick-team-chip:hover {
   border-color: var(--brand);
 }
+.diesel-entry-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 2fr);
+  gap: 18px;
+  align-items: end;
+}
+
+.diesel-entry-card p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.diesel-entry-form {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.diesel-entry-form label {
+  min-width: 0;
+}
+
+.diesel-entry-form button {
+  min-height: 48px;
+}
 
 .drill-month-list {
   display: grid;
@@ -2769,6 +2795,8 @@ textarea:focus {
   .sheet-settings-form,
   .daily-form,
   .perf-form,
+  .diesel-entry-card,
+  .diesel-entry-form,
   .analytics-dashboard-grid,
   .report-generator,
   .report-period-form,
@@ -2869,6 +2897,8 @@ textarea:focus {
   .sheet-settings-form,
   .daily-form,
   .perf-form,
+  .diesel-entry-card,
+  .diesel-entry-form,
   .analytics-dashboard-grid,
   .report-generator,
   .report-period-form,
