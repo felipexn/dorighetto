@@ -88,9 +88,8 @@ export function PerfuracaoFormFields({
   const wasPendingRef = useRef(false);
 
   function updateHole(key: string, field: "code" | "meters", value: string) {
-    const fieldValue = field === "code" ? normalizeDrillingHoleCode(value) : value;
     setHoles((current) => {
-      const updated = current.map((item) => (item.key === key ? { ...item, [field]: fieldValue } : item));
+      const updated = current.map((item) => (item.key === key ? { ...item, [field]: value } : item));
       const last = updated[updated.length - 1];
       if (last.code.trim() && last.meters.trim()) {
         return [...updated, blankHole()];
@@ -99,6 +98,11 @@ export function PerfuracaoFormFields({
     });
   }
 
+  function normalizeHoleCodeOnBlur(key: string) {
+    setHoles((current) => current.map((item) => (
+      item.key === key ? { ...item, code: normalizeDrillingHoleCode(item.code) } : item
+    )));
+  }
   function addHole() {
     setHoles((current) => [...current, blankHole()]);
   }
@@ -273,6 +277,7 @@ export function PerfuracaoFormFields({
                 data-hole-field="code"
                 data-hole-index={index}
                 onChange={(event) => updateHole(hole.key, "code", event.target.value)}
+                onBlur={() => normalizeHoleCodeOnBlur(hole.key)}
                 onKeyDown={(event) => handleHoleKeyDown(event, index, "code")}
               />
             </span>
