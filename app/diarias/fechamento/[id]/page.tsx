@@ -28,6 +28,7 @@ export default async function FechamentoPage({ params }: Props) {
   if (!closure) notFound();
 
   const grossTotal = closure.totalDaily.add(closure.totalOvertime).add(closure.totalAddition);
+  const totalOvertimeHours = closure.entries.reduce((total, entry) => total + decimalToNumber(entry.overtimeHours), 0);
 
   return (
     <AppShell active="diarias" name={session.name} role={session.role} permissions={session.permissions}>
@@ -108,6 +109,7 @@ export default async function FechamentoPage({ params }: Props) {
 
           <div className="pdf-total-box">
             <div><span>Total de diárias</span><strong>{formatCurrency(decimalToNumber(closure.totalDaily))}</strong></div>
+            <div><span>Quantidade H.E.</span><strong>{totalOvertimeHours.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}h</strong></div>
             <div><span>Total horas extras</span><strong>{formatCurrency(decimalToNumber(closure.totalOvertime))}</strong></div>
             <div><span>Acr?scimos</span><strong>+ {formatCurrency(decimalToNumber(closure.totalAddition))}</strong></div>
             <div><span>Total bruto</span><strong>{formatCurrency(decimalToNumber(grossTotal))}</strong></div>

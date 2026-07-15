@@ -242,10 +242,12 @@ export async function GET(_: Request, { params }: Props) {
       y += advanceBoxHeight + 18;
     }
 
+    const totalOvertimeHours = closure.entries.reduce((total, entry) => total + decimalToNumber(entry.overtimeHours), 0);
     const totalBoxWidth = 265;
     const totalBoxX = contentX + contentWidth - totalBoxWidth;
     const totalRows = [
       ["Total de diárias", formatCurrency(decimalToNumber(closure.totalDaily))],
+      ["Quantidade H.E.", `${totalOvertimeHours.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}h`],
       ["Total horas extras", formatCurrency(decimalToNumber(closure.totalOvertime))],
       ["Acr?scimos", `+ ${formatCurrency(decimalToNumber(closure.totalAddition))}`],
       ["Total bruto", formatCurrency(decimalToNumber(closure.totalDaily.add(closure.totalOvertime).add(closure.totalAddition)))],

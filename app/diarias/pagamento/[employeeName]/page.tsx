@@ -52,6 +52,7 @@ export default async function PagamentoDiariaPage({ params }: Props) {
   const periodEnd = entries[entries.length - 1].date;
   const totalDaily = entries.reduce((total, entry) => total.add(entry.dailyValue), new Prisma.Decimal(0));
   const totalOvertime = entries.reduce((total, entry) => total.add(entry.overtimeTotal), new Prisma.Decimal(0));
+  const totalOvertimeHours = entries.reduce((total, entry) => total + decimalToNumber(entry.overtimeHours), 0);
   const totalGross = entries.reduce((total, entry) => total.add(entry.dayTotal), new Prisma.Decimal(0));
   const totalAdvance = advances.reduce((total, advance) => total.add(advance.amount), new Prisma.Decimal(0));
   const totalAddition = additions.reduce((total, addition) => total.add(addition.amount), new Prisma.Decimal(0));
@@ -215,6 +216,7 @@ export default async function PagamentoDiariaPage({ params }: Props) {
 
           <div className="pdf-total-box">
             <div><span>Total de diárias</span><strong>{formatCurrency(decimalToNumber(totalDaily))}</strong></div>
+            <div><span>Quantidade H.E.</span><strong>{totalOvertimeHours.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}h</strong></div>
             <div><span>Total horas extras</span><strong>{formatCurrency(decimalToNumber(totalOvertime))}</strong></div>
             <div><span>Acr?scimos pendentes</span><strong>+ {formatCurrency(decimalToNumber(totalAddition))}</strong></div>
             <div><span>Vales pendentes</span><strong>- {formatCurrency(decimalToNumber(totalAdvance))}</strong></div>
