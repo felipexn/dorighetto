@@ -29,6 +29,8 @@ type SearchParams = Promise<{
   prefillEquipe?: string;
   prefillPerfuratriz?: string;
   prefillBanco?: string;
+  prefillBancoOperacional?: string;
+  prefillPlanoFogo?: string;
   prefillAtividade?: string;
   prefillTurno?: string;
   prefillMotorInicial?: string;
@@ -48,6 +50,8 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
     teamName: string;
     machineName: string;
     bankName: string;
+    benchName: string | null;
+    blastPlan: string | null;
     activityCode: string;
     shift: string;
     motorStart: string;
@@ -61,6 +65,8 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
     teamName: string;
     machineName: string;
     bankName: string;
+    benchName: string | null;
+    blastPlan: string | null;
     activityCode: string;
     shift: string;
     motorStart: string;
@@ -93,6 +99,8 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
         teamName: true,
         machineName: true,
         bankName: true,
+        benchName: true,
+        blastPlan: true,
         activityCode: true,
         shift: true,
         motorStart: true,
@@ -212,7 +220,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
               <Link
                 key={item.teamName}
                 className="quick-team-chip"
-                href={`/perfuracao?prefillEquipe=${encodeURIComponent(item.teamName)}&prefillPerfuratriz=${encodeURIComponent(normalizeDrillingMachineName(item.machineName))}&prefillBanco=${encodeURIComponent(normalizeDrillingBankName(item.bankName))}&prefillAtividade=${encodeURIComponent(item.activityCode)}&prefillTurno=${encodeURIComponent(normalizeDrillingShift(item.shift))}&prefillMotorInicial=${encodeURIComponent(item.motorStart)}&prefillMotorFinal=${encodeURIComponent(item.motorEnd)}`}
+                href={`/perfuracao?prefillEquipe=${encodeURIComponent(item.teamName)}&prefillPerfuratriz=${encodeURIComponent(normalizeDrillingMachineName(item.machineName))}&prefillBanco=${encodeURIComponent(normalizeDrillingBankName(item.bankName))}&prefillBancoOperacional=${encodeURIComponent(item.benchName ?? "")}&prefillPlanoFogo=${encodeURIComponent(item.blastPlan ?? "")}&prefillAtividade=${encodeURIComponent(item.activityCode)}&prefillTurno=${encodeURIComponent(normalizeDrillingShift(item.shift))}&prefillMotorInicial=${encodeURIComponent(item.motorStart)}&prefillMotorFinal=${encodeURIComponent(item.motorEnd)}`}
               >
                 {item.teamName}
               </Link>
@@ -259,7 +267,9 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
               {machineOptions.map((machine) => <option key={machine} value={machine} />)}
             </datalist>
           </label>
-          <label>Banco<input name="bankName" placeholder="Ex: BANCO CELESTE" defaultValue={params.prefillBanco ?? ""} required /></label>
+          <label>Cava<input name="bankName" placeholder="Ex: 1, 2 ou 3" defaultValue={params.prefillBanco ?? ""} required /></label>
+          <label>Banco<input name="benchName" placeholder="Ex: Banco 03" defaultValue={params.prefillBancoOperacional ?? ""} /></label>
+          <label>Plano de fogo<input name="blastPlan" placeholder="Ex: PF-01" defaultValue={params.prefillPlanoFogo ?? ""} /></label>
           <label>Turno
             <select name="shift" defaultValue={selectedShift} required>
               {drillingShiftOptions.map((shift) => <option key={shift.value} value={shift.value}>{shift.label}</option>)}
@@ -310,7 +320,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
                             <summary>
                               <div className="drill-record-title">
                                 <strong>{record.teamName}</strong>
-                                <span>{normalizeDrillingMachineName(record.machineName)} | Banco {normalizeDrillingBankName(record.bankName)}</span>
+                                <span>{normalizeDrillingMachineName(record.machineName)} | Cava {normalizeDrillingBankName(record.bankName)}</span>
                               </div>
                               <div className="drill-record-total">
                                 <strong>{metersLabel(total)}</strong>
@@ -321,7 +331,9 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
 
                             <div className="drill-record-body">
                               <div className="drill-meta">
-                                <span>Banco: {normalizeDrillingBankName(record.bankName)}</span>
+                                <span>Cava: {normalizeDrillingBankName(record.bankName)}</span>
+                                {record.benchName ? <span>Banco: {record.benchName}</span> : null}
+                                {record.blastPlan ? <span>Plano de fogo: {record.blastPlan}</span> : null}
                                 <span>Turno: {formatDrillingShift(record.shift)}</span>
                                 <span>Atividade: {record.activityCode}</span>
                                 <span>H. motor: {record.motorStart} - {record.motorEnd}</span>

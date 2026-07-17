@@ -117,7 +117,7 @@ function OperationalSummary({ summary, recordCount }: { summary: DrillingReportS
         <div><span>Destaques</span><h2>Resumo operacional</h2></div>
       </div>
       <div className="summary-highlight-list">
-        <div><span>Banco mais produtivo</span><strong>{summary.topBank?.label ?? "-"}</strong><small>{summary.topBank ? metersLabel(summary.topBank.value) : "Sem dados"}</small></div>
+        <div><span>Cava mais produtiva</span><strong>{summary.topBank?.label ?? "-"}</strong><small>{summary.topBank ? metersLabel(summary.topBank.value) : "Sem dados"}</small></div>
         <div><span>Perfuratriz líder</span><strong>{summary.topMachine?.label ?? "-"}</strong><small>{summary.topMachine ? metersLabel(summary.topMachine.value) : "Sem dados"}</small></div>
         <div><span>Melhor produção/hora</span><strong>{summary.topHourlyTeam?.label ?? "-"}</strong><small>{summary.topHourlyTeam ? metersPerHourLabel(summary.topHourlyTeam.value) : "Sem uso calculado"}</small></div>
         <div><span>Fichas e furos</span><strong>{recordCount} fichas</strong><small>{summary.totalFuros} furos registrados</small></div>
@@ -174,7 +174,7 @@ function BankParticipation({ items, total }: { items: ChartItem[]; total: number
   return (
     <section className="panel analytics-card bank-participation-card">
       <div className="analytics-card-head">
-        <div><span>Análise</span><h2>Participação por banco</h2></div>
+        <div><span>Análise</span><h2>Participação por cava</h2></div>
         <strong>{items.length} grupos</strong>
       </div>
       <div className="donut-layout">
@@ -304,14 +304,14 @@ export function DrillingReportDashboard({ initialData }: Props) {
             <div><span>Média de parada/ficha</span><strong>{hoursLabel(data.reportSummary.mediaHorasParadasFicha)}</strong></div>
             <div><span>Principal motivo de parada</span><strong>{data.reportSummary.topDowntimeReason?.label ?? "-"}</strong><small>{data.reportSummary.topDowntimeReason ? hoursLabel(data.reportSummary.topDowntimeReason.value) : "Sem dados"}</small></div>
             <div><span>Equipe melhor</span><strong>{data.reportSummary.topTeam?.label ?? "-"}</strong><small>{data.reportSummary.topTeam ? metersLabel(data.reportSummary.topTeam.value) : "Sem dados"}</small></div>
-            <div><span>Banco mais furado</span><strong>{data.reportSummary.topBank?.label ?? "-"}</strong><small>{data.reportSummary.topBank ? metersLabel(data.reportSummary.topBank.value) : "Sem dados"}</small></div>
+            <div><span>Cava mais furada</span><strong>{data.reportSummary.topBank?.label ?? "-"}</strong><small>{data.reportSummary.topBank ? metersLabel(data.reportSummary.topBank.value) : "Sem dados"}</small></div>
             <div><span>Fichas lançadas</span><strong>{data.reportRecordsCount}</strong></div>
             <div><span>Total de furos</span><strong>{data.reportSummary.totalFuros}</strong></div>
           </div>
 
           <div className="report-details-grid">
             <ReportRanking title="Equipes no período" items={data.reportSummary.byTeam} />
-            <ReportRanking title="Bancos no período" items={data.reportSummary.byBank} />
+            <ReportRanking title="Cavas no período" items={data.reportSummary.byBank} />
             <ReportRanking title="Perfuratrizes no período" items={data.reportSummary.byMachine} />
             <ReportRanking title="Atividades no período" items={data.reportSummary.byActivity} />
             <ReportRanking title="Produção/hora por equipe" items={data.reportSummary.productionPerHourByTeam} valueLabel={metersPerHourLabel} />
@@ -329,7 +329,7 @@ export function DrillingReportDashboard({ initialData }: Props) {
             {options.equipes.map((teamName) => <option key={teamName}>{teamName}</option>)}
           </select>
         </label>
-        <label>Banco
+        <label>Cava
           <select name="banco" defaultValue={selected.banco ?? ""}>
             <option value="">Todos</option>
             {options.bancos.map((bankName) => <option key={bankName}>{bankName}</option>)}

@@ -212,6 +212,8 @@ model DrillingRecord {
   teamName      String      @map("team_name")
   machineName   String      @map("machine_name")
   bankName      String      @map("bank_name")
+  benchName     String?     @map("bench_name")
+  blastPlan     String?     @map("blast_plan")
   activityCode  String      @map("activity_code")
   shift         String      @default("DIA")
   motorStart    String      @map("motor_start")

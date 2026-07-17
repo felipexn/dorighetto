@@ -9,6 +9,8 @@ const statements = [
     team_name text not null,
     machine_name text not null,
     bank_name text not null,
+    bench_name text,
+    blast_plan text,
     activity_code text not null,
     shift text not null default 'DIA',
     motor_start text not null,
@@ -44,6 +46,9 @@ const statements = [
   )`,
   `alter table drilling_records
     add column if not exists shift text not null default 'DIA'`,
+  `alter table drilling_records
+    add column if not exists bench_name text,
+    add column if not exists blast_plan text`,
   `create index if not exists drilling_records_date_team_name_idx
     on drilling_records(date, team_name)`,
   `create index if not exists drilling_records_shift_idx

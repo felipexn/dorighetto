@@ -13,7 +13,12 @@ export function normalizeDrillingMachineName(value: string) {
 }
 
 export function normalizeDrillingBankName(value: string) {
-  const trimmed = value.trim().toUpperCase();
+  const trimmed = value
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/^(BANCO|CAVA)\s+/, "");
   if (/^\d+$/.test(trimmed)) {
     return trimmed.replace(/^0+(?=\d)/, "") || "0";
   }
