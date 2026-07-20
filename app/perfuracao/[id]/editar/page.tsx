@@ -102,8 +102,8 @@ export default async function EditarPerfuracaoPage({ params, searchParams }: Pro
             {machineOptions.map((machine) => <option key={machine} value={machine} />)}
           </datalist>
         </label>
-        <label>Cava<input name="bankName" placeholder="Ex: 1, 2 ou 3" defaultValue={normalizeDrillingBankName(record.bankName)} required /></label>
-        <label>Cava<input name="benchName" placeholder="Ex: Cava 03" defaultValue={record.benchName ?? ""} /></label>
+        <label>Banco<input name="bankName" placeholder="Ex: 1, 2 ou 3" defaultValue={normalizeDrillingBankName(record.bankName)} required /></label>
+        <label>Cava<input name="benchName" placeholder="Ex: Cava 03" defaultValue={record.benchName ? normalizeDrillingBankName(record.benchName) : ""} /></label>
         <label>Plano de fogo<input name="blastPlan" placeholder="Ex: PF-01" defaultValue={record.blastPlan ?? ""} /></label>
         <label>Turno
           <select name="shift" defaultValue={normalizeDrillingShift(record.shift)} required>
