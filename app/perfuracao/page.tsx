@@ -268,7 +268,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
             </datalist>
           </label>
           <label>Cava<input name="bankName" placeholder="Ex: 1, 2 ou 3" defaultValue={params.prefillBanco ?? ""} required /></label>
-          <label>Banco<input name="benchName" placeholder="Ex: Banco 03" defaultValue={params.prefillBancoOperacional ?? ""} /></label>
+          <label>Cava<input name="benchName" placeholder="Ex: Cava 03" defaultValue={params.prefillBancoOperacional ?? ""} /></label>
           <label>Plano de fogo<input name="blastPlan" placeholder="Ex: PF-01" defaultValue={params.prefillPlanoFogo ?? ""} /></label>
           <label>Turno
             <select name="shift" defaultValue={selectedShift} required>
@@ -332,7 +332,7 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
                             <div className="drill-record-body">
                               <div className="drill-meta">
                                 <span>Cava: {normalizeDrillingBankName(record.bankName)}</span>
-                                {record.benchName ? <span>Banco: {record.benchName}</span> : null}
+                                {record.benchName ? <span>Cava: {record.benchName}</span> : null}
                                 {record.blastPlan ? <span>Plano de fogo: {record.blastPlan}</span> : null}
                                 <span>Turno: {formatDrillingShift(record.shift)}</span>
                                 <span>Atividade: {record.activityCode}</span>
