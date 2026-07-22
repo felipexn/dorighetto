@@ -40,9 +40,7 @@ export function PaymentEntryForm({ today, employeeNames, fichados }: Props) {
       <div className="form-section-title wide-field">
         <span className="eyebrow">Lançamento</span>
         <h2>Adicionar pagamento</h2>
-        <p>
-          Diarista continua sendo lançado por nome, diária e horas extras. Fichado precisa estar cadastrado e recebe apenas horas extras.
-        </p>
+        <p>Para diaristas, informe a diária. Para fichados, lance somente as horas extras.</p>
       </div>
 
       <label>Data<input name="date" type="date" defaultValue={today} required /></label>

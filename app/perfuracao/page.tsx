@@ -1,4 +1,4 @@
-import { BarChart3, ChevronDown, Pencil, Trash2 } from "lucide-react";
+import { BarChart3, ChevronDown, ClipboardList, Pencil, Save, Settings2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
@@ -253,34 +253,64 @@ export default async function PerfuracaoPage({ searchParams }: { searchParams: S
         </section>
       ) : null}
       {canWrite && !setupWarning ? (
-        <form className="panel perf-form" action={createDrillingRecordAction}>
-          <label>Data<input name="date" type="date" defaultValue={toDateInput(new Date())} /></label>
-          <label>Equipe
-            <input name="teamName" list="team-options" placeholder="Ex: EQUIPE 01" defaultValue={params.prefillEquipe ?? ""} required />
-            <datalist id="team-options">
-              {equipes.map((item) => <option key={item.teamName} value={item.teamName} />)}
-            </datalist>
-          </label>
-          <label>Perfuratriz
-            <input name="machineName" list="machine-options" placeholder="Ex: 80" defaultValue={selectedMachine} required />
-            <datalist id="machine-options">
-              {machineOptions.map((machine) => <option key={machine} value={machine} />)}
-            </datalist>
-          </label>
-          <label>Banco<input name="bankName" placeholder="Ex: 1, 2 ou 3" defaultValue={params.prefillBanco ?? ""} required /></label>
-          <label>Cava<input name="benchName" placeholder="Ex: Cava 03" defaultValue={params.prefillBancoOperacional ?? ""} /></label>
-          <label>Plano de fogo<input name="blastPlan" placeholder="Ex: PF-01" defaultValue={params.prefillPlanoFogo ?? ""} /></label>
-          <label>Turno
-            <select name="shift" defaultValue={selectedShift} required>
-              {drillingShiftOptions.map((shift) => <option key={shift.value} value={shift.value}>{shift.label}</option>)}
-            </select>
-          </label>
-          <label>H. motor inicial<input name="motorStart" placeholder="Ex: 1245" defaultValue={params.prefillMotorInicial ?? ""} required /></label>
-          <label>H. motor final<input name="motorEnd" placeholder="Ex: 1276" defaultValue={params.prefillMotorFinal ?? ""} required /></label>
-          <label>Código da atividade<input name="activityCode" placeholder="Ex: AT-234" defaultValue={params.prefillAtividade ?? ""} required /></label>
-          <label className="wide-field">Observação<input name="notes" placeholder="Opcional" /></label>
+        <form className="panel perf-form perf-form-shell" action={createDrillingRecordAction}>
+          <div className="perf-form-heading">
+            <span className="section-icon large"><ClipboardList size={22} /></span>
+            <div>
+              <span className="eyebrow">Nova ficha</span>
+              <h2>Registrar perfuração</h2>
+            </div>
+          </div>
+
+          <fieldset className="perf-field-group">
+            <legend>Dados principais</legend>
+            <div className="perf-field-grid">
+              <label>Data<input name="date" type="date" defaultValue={toDateInput(new Date())} required /></label>
+              <label>Equipe
+                <input name="teamName" list="team-options" placeholder="Ex: EQUIPE 01" defaultValue={params.prefillEquipe ?? ""} required />
+                <datalist id="team-options">
+                  {equipes.map((item) => <option key={item.teamName} value={item.teamName} />)}
+                </datalist>
+              </label>
+              <label>Perfuratriz
+                <input name="machineName" list="machine-options" placeholder="Ex: 80" defaultValue={selectedMachine} required />
+                <datalist id="machine-options">
+                  {machineOptions.map((machine) => <option key={machine} value={machine} />)}
+                </datalist>
+              </label>
+              <label>Turno
+                <select name="shift" defaultValue={selectedShift} required>
+                  {drillingShiftOptions.map((shift) => <option key={shift.value} value={shift.value}>{shift.label}</option>)}
+                </select>
+              </label>
+              <label>Banco<input name="bankName" placeholder="Ex: 1, 2 ou 3" defaultValue={params.prefillBanco ?? ""} required /></label>
+              <label>H. motor inicial<input name="motorStart" placeholder="Ex: 1245" defaultValue={params.prefillMotorInicial ?? ""} required /></label>
+              <label>H. motor final<input name="motorEnd" placeholder="Ex: 1276" defaultValue={params.prefillMotorFinal ?? ""} required /></label>
+              <label>Código da atividade<input name="activityCode" placeholder="Ex: AT-234" defaultValue={params.prefillAtividade ?? ""} required /></label>
+            </div>
+          </fieldset>
+
+          <details className="form-disclosure perf-optional-fields">
+            <summary>
+              <span className="form-section-title">
+                <span className="section-icon"><Settings2 size={18} /></span>
+                <span><strong>Informações opcionais</strong><small>Cava, plano de fogo e observação</small></span>
+              </span>
+              <ChevronDown size={19} />
+            </summary>
+            <div className="perf-field-grid disclosure-content">
+              <label>Cava<input name="benchName" placeholder="Ex: Cava 03" defaultValue={params.prefillBancoOperacional ?? ""} /></label>
+              <label>Plano de fogo<input name="blastPlan" placeholder="Ex: PF-01" defaultValue={params.prefillPlanoFogo ?? ""} /></label>
+              <label className="wide-field">Observação<input name="notes" placeholder="Opcional" /></label>
+            </div>
+          </details>
+
           <PerfuracaoFormFields />
-          <button type="submit">Salvar ficha do dia</button>
+
+          <div className="perf-submit-bar">
+            <span>Os totais dos furos são calculados automaticamente.</span>
+            <button type="submit"><Save size={18} /> Salvar ficha</button>
+          </div>
         </form>
       ) : null}
 

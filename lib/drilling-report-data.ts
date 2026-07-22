@@ -5,6 +5,12 @@ import { normalizeDrillingBankName, normalizeDrillingMachineName, normalizeDrill
 const EXPECTED_DAILY_OPERATION_HOURS = 8;
 
 export type ChartItem = { label: string; value: number };
+export type DrillingFuelReportEntry = {
+  date: string;
+  machineName: string;
+  quantity: number;
+  notes: string | null;
+};
 export type DrillingReportRecord = {
   date: string;
   teamName: string;
@@ -30,6 +36,7 @@ export type DrillingReportFilters = {
 };
 
 export type DrillingReportSummary = ReturnType<typeof summarizeRecords>;
+export type DrillingFuelSummary = ReturnType<typeof summarizeFuelEntries>;
 
 export type DrillingReportData = {
   filters: DrillingReportFilters;
@@ -39,6 +46,9 @@ export type DrillingReportData = {
   reportRecordsCount: number;
   filteredSummary: DrillingReportSummary;
   reportSummary: DrillingReportSummary;
+  filteredFuelSummary: DrillingFuelSummary;
+  reportFuelSummary: DrillingFuelSummary;
+  reportFuelEntries: DrillingFuelReportEntry[];
   options: {
     equipes: string[];
     bancos: string[];
@@ -51,6 +61,10 @@ export type DrillingReportData = {
 
 export function metersLabel(value: number) {
   return `${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m`;
+}
+
+export function litersLabel(value: number) {
+  return `${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L`;
 }
 
 export function shortNumber(value: number) {
@@ -148,6 +162,54 @@ function groupMetersByDate(records: DrillingReportRecord[]) {
   }, new Map<string, number>()).entries())
     .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
     .map(([label, value]) => ({ label: formatDate(new Date(`${label}T00:00:00.000Z`)), value }));
+}
+
+function groupFuelEntries(
+  entries: DrillingFuelReportEntry[],
+  key: "machineName" | "date"
+) {
+  const map = new Map<string, number>();
+  for (const entry of entries) {
+    const label = key === "machineName"
+      ? normalizeDrillingMachineName(entry.machineName)
+      : entry.date.slice(0, 10);
+    map.set(label, (map.get(label) ?? 0) + entry.quantity);
+  }
+
+  const items = Array.from(map.entries());
+  if (key === "date") {
+    return items
+      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+      .map(([label, value]) => ({
+        label: formatDate(new Date(`${label}T00:00:00.000Z`)),
+        value
+      }));
+  }
+
+  return items
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value);
+}
+
+export function summarizeFuelEntries(entries: DrillingFuelReportEntry[]) {
+  const totalLitros = entries.reduce((acc, entry) => acc + entry.quantity, 0);
+  const diasComAbastecimento = new Set(entries.map((entry) => entry.date.slice(0, 10))).size;
+  const totalAbastecimentos = entries.length;
+  const mediaLitrosDia = diasComAbastecimento > 0 ? totalLitros / diasComAbastecimento : 0;
+  const mediaLitrosAbastecimento = totalAbastecimentos > 0 ? totalLitros / totalAbastecimentos : 0;
+  const byMachine = groupFuelEntries(entries, "machineName");
+  const byDate = groupFuelEntries(entries, "date");
+
+  return {
+    totalLitros,
+    diasComAbastecimento,
+    totalAbastecimentos,
+    mediaLitrosDia,
+    mediaLitrosAbastecimento,
+    byMachine,
+    byDate,
+    topMachine: byMachine[0]
+  };
 }
 
 function groupProductionPerHourByRecords(records: DrillingReportRecord[], key: "teamName" | "machineName") {
@@ -311,12 +373,17 @@ export async function getDrillingReportData(prisma: PrismaClient, rawFilters: Dr
       orderBy: [{ date: "asc" }, { teamName: "asc" }]
     });
 
-    const [equipes, bancos, perfuratrizes, atividades, paradas] = await Promise.all([
+    const [equipes, bancos, perfuratrizes, fuelMachines, atividades, paradas, fuelEntries] = await Promise.all([
       prisma.drillingRecord.findMany({ distinct: ["teamName"], select: { teamName: true }, orderBy: { teamName: "asc" } }),
       prisma.drillingRecord.findMany({ distinct: ["bankName"], select: { bankName: true }, orderBy: { bankName: "asc" } }),
       prisma.drillingRecord.findMany({ distinct: ["machineName"], select: { machineName: true }, orderBy: { machineName: "asc" } }),
+      prisma.drillingFuelEntry.findMany({ distinct: ["machineName"], select: { machineName: true }, orderBy: { machineName: "asc" } }),
       prisma.drillingRecord.findMany({ distinct: ["activityCode"], select: { activityCode: true }, orderBy: { activityCode: "asc" } }),
-      prisma.drillingDowntime.findMany({ distinct: ["reason"], select: { reason: true }, orderBy: { reason: "asc" } })
+      prisma.drillingDowntime.findMany({ distinct: ["reason"], select: { reason: true }, orderBy: { reason: "asc" } }),
+      prisma.drillingFuelEntry.findMany({
+        where: { date: startDate || endDate ? { gte: startDate, lte: endDate } : undefined },
+        orderBy: [{ date: "asc" }, { machineName: "asc" }]
+      })
     ]);
 
     const selectedBank = filters.banco ? normalizeDrillingBankName(filters.banco) : "";
@@ -346,6 +413,15 @@ export async function getDrillingReportData(prisma: PrismaClient, rawFilters: Dr
 
     const filteredRecords = serialize(records);
     const consolidatedRecords = serialize(reportRecords);
+    const serializedFuelEntries: DrillingFuelReportEntry[] = fuelEntries.map((entry) => ({
+      date: entry.date.toISOString(),
+      machineName: normalizeDrillingMachineName(entry.machineName),
+      quantity: decimalToNumber(entry.quantity),
+      notes: entry.notes
+    }));
+    const filteredFuelEntries = selectedMachine
+      ? serializedFuelEntries.filter((entry) => entry.machineName === selectedMachine)
+      : serializedFuelEntries;
     const reportPeriod = hasReportPeriod
       ? `${filters.inicio ? formatDate(new Date(`${filters.inicio}T00:00:00.000Z`)) : "Início"} até ${filters.fim ? formatDate(new Date(`${filters.fim}T00:00:00.000Z`)) : "Hoje"}${selectedShift ? ` | Turno: ${formatDrillingShift(selectedShift)}` : ""}`
       : "";
@@ -358,10 +434,13 @@ export async function getDrillingReportData(prisma: PrismaClient, rawFilters: Dr
       reportRecordsCount: consolidatedRecords.length,
       filteredSummary: summarizeRecords(filteredRecords),
       reportSummary: summarizeRecords(consolidatedRecords),
+      filteredFuelSummary: summarizeFuelEntries(filteredFuelEntries),
+      reportFuelSummary: summarizeFuelEntries(serializedFuelEntries),
+      reportFuelEntries: serializedFuelEntries,
       options: {
         equipes: equipes.map((item) => item.teamName),
         bancos: uniqueBankOptions(bancos),
-        perfuratrizes: uniqueMachineOptions(perfuratrizes),
+        perfuratrizes: uniqueMachineOptions([...perfuratrizes, ...fuelMachines]),
         atividades: atividades.map((item) => item.activityCode),
         paradas: paradas.map((item) => item.reason)
       },
@@ -372,6 +451,7 @@ export async function getDrillingReportData(prisma: PrismaClient, rawFilters: Dr
   }
 
   const emptySummary = summarizeRecords([]);
+  const emptyFuelSummary = summarizeFuelEntries([]);
   return {
     filters,
     hasReportPeriod,
@@ -380,6 +460,9 @@ export async function getDrillingReportData(prisma: PrismaClient, rawFilters: Dr
     reportRecordsCount: 0,
     filteredSummary: emptySummary,
     reportSummary: emptySummary,
+    filteredFuelSummary: emptyFuelSummary,
+    reportFuelSummary: emptyFuelSummary,
+    reportFuelEntries: [],
     options: { equipes: [], bancos: [], perfuratrizes: [], atividades: [], paradas: [] },
     setupWarning
   };

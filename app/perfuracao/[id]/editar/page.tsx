@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, ChevronDown, ClipboardList, Save, Settings2 } from "lucide-react";
 import { notFound } from "next/navigation";
 import { updateDrillingRecordAction } from "@/app/actions";
 import { AppShell } from "@/components/app-shell";
@@ -86,36 +86,66 @@ export default async function EditarPerfuracaoPage({ params, searchParams }: Pro
 
       {actionError ? <section className="form-error">{actionError}</section> : null}
 
-      <form className="panel perf-form" action={updateDrillingRecordAction}>
+      <form className="panel perf-form perf-form-shell" action={updateDrillingRecordAction}>
         <input type="hidden" name="id" value={record.id} />
 
-        <label>Data<input name="date" type="date" defaultValue={toDateInput(record.date)} required /></label>
-        <label>Equipe
-          <input name="teamName" list="team-options-edit" placeholder="Ex: EQUIPE 01" defaultValue={record.teamName} required />
-          <datalist id="team-options-edit">
-            {equipes.map((item) => <option key={item.teamName} value={item.teamName} />)}
-          </datalist>
-        </label>
-        <label>Perfuratriz
-          <input name="machineName" list="machine-options-edit" placeholder="Ex: 80" defaultValue={normalizeDrillingMachineName(record.machineName)} required />
-          <datalist id="machine-options-edit">
-            {machineOptions.map((machine) => <option key={machine} value={machine} />)}
-          </datalist>
-        </label>
-        <label>Banco<input name="bankName" placeholder="Ex: 1, 2 ou 3" defaultValue={normalizeDrillingBankName(record.bankName)} required /></label>
-        <label>Cava<input name="benchName" placeholder="Ex: Cava 03" defaultValue={record.benchName ? normalizeDrillingBankName(record.benchName) : ""} /></label>
-        <label>Plano de fogo<input name="blastPlan" placeholder="Ex: PF-01" defaultValue={record.blastPlan ?? ""} /></label>
-        <label>Turno
-          <select name="shift" defaultValue={normalizeDrillingShift(record.shift)} required>
-            {drillingShiftOptions.map((shift) => <option key={shift.value} value={shift.value}>{shift.label}</option>)}
-          </select>
-        </label>
-        <label>H. motor inicial<input name="motorStart" placeholder="Ex: 1245" defaultValue={record.motorStart} required /></label>
-        <label>H. motor final<input name="motorEnd" placeholder="Ex: 1276" defaultValue={record.motorEnd} required /></label>
-        <label>Código da atividade<input name="activityCode" placeholder="Ex: AT-234" defaultValue={record.activityCode} required /></label>
-        <label className="wide-field">Observação<input name="notes" placeholder="Opcional" defaultValue={record.notes ?? ""} /></label>
+        <div className="perf-form-heading">
+          <span className="section-icon large"><ClipboardList size={22} /></span>
+          <div>
+            <span className="eyebrow">Edição</span>
+            <h2>Atualizar ficha</h2>
+          </div>
+        </div>
+
+        <fieldset className="perf-field-group">
+          <legend>Dados principais</legend>
+          <div className="perf-field-grid">
+            <label>Data<input name="date" type="date" defaultValue={toDateInput(record.date)} required /></label>
+            <label>Equipe
+              <input name="teamName" list="team-options-edit" placeholder="Ex: EQUIPE 01" defaultValue={record.teamName} required />
+              <datalist id="team-options-edit">
+                {equipes.map((item) => <option key={item.teamName} value={item.teamName} />)}
+              </datalist>
+            </label>
+            <label>Perfuratriz
+              <input name="machineName" list="machine-options-edit" placeholder="Ex: 80" defaultValue={normalizeDrillingMachineName(record.machineName)} required />
+              <datalist id="machine-options-edit">
+                {machineOptions.map((machine) => <option key={machine} value={machine} />)}
+              </datalist>
+            </label>
+            <label>Turno
+              <select name="shift" defaultValue={normalizeDrillingShift(record.shift)} required>
+                {drillingShiftOptions.map((shift) => <option key={shift.value} value={shift.value}>{shift.label}</option>)}
+              </select>
+            </label>
+            <label>Banco<input name="bankName" placeholder="Ex: 1, 2 ou 3" defaultValue={normalizeDrillingBankName(record.bankName)} required /></label>
+            <label>H. motor inicial<input name="motorStart" placeholder="Ex: 1245" defaultValue={record.motorStart} required /></label>
+            <label>H. motor final<input name="motorEnd" placeholder="Ex: 1276" defaultValue={record.motorEnd} required /></label>
+            <label>Código da atividade<input name="activityCode" placeholder="Ex: AT-234" defaultValue={record.activityCode} required /></label>
+          </div>
+        </fieldset>
+
+        <details className="form-disclosure perf-optional-fields" open={Boolean(record.benchName || record.blastPlan || record.notes)}>
+          <summary>
+            <span className="form-section-title">
+              <span className="section-icon"><Settings2 size={18} /></span>
+              <span><strong>Informações opcionais</strong><small>Cava, plano de fogo e observação</small></span>
+            </span>
+            <ChevronDown size={19} />
+          </summary>
+          <div className="perf-field-grid disclosure-content">
+            <label>Cava<input name="benchName" placeholder="Ex: Cava 03" defaultValue={record.benchName ? normalizeDrillingBankName(record.benchName) : ""} /></label>
+            <label>Plano de fogo<input name="blastPlan" placeholder="Ex: PF-01" defaultValue={record.blastPlan ?? ""} /></label>
+            <label className="wide-field">Observação<input name="notes" placeholder="Opcional" defaultValue={record.notes ?? ""} /></label>
+          </div>
+        </details>
+
         <PerfuracaoFormFields initialHoles={initialHoles} initialDowntimes={initialDowntimes} />
-        <button type="submit"><Save size={18} /> Salvar alterações</button>
+
+        <div className="perf-submit-bar">
+          <span>Revise os dados antes de salvar.</span>
+          <button type="submit"><Save size={18} /> Salvar alterações</button>
+        </div>
       </form>
     </AppShell>
   );

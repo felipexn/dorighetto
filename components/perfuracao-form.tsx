@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { ChevronDown, CirclePlus, Drill, PauseCircle, Trash2 } from "lucide-react";
 import { normalizeDrillingHoleCode } from "@/lib/drilling";
 
 type HoleInput = {
@@ -42,6 +43,16 @@ function blankHole(key = newHoleKey()): HoleInput {
 
 function blankDowntime(key = newHoleKey()): DowntimeInput {
   return { key, hours: "", reason: "", otherReason: "" };
+}
+
+function parseInputNumber(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return 0;
+  const normalized = trimmed.includes(",")
+    ? trimmed.replace(/\./g, "").replace(",", ".")
+    : trimmed;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function buildInitialHoles(initialHoles: InitialHoleInput[] = []) {
@@ -85,6 +96,7 @@ export function PerfuracaoFormFields({
   const [holes, setHoles] = useState<HoleInput[]>(() => buildInitialHoles(initialHoles));
   const [downtimes, setDowntimes] = useState<DowntimeInput[]>(() => buildInitialDowntimes(initialDowntimes));
   const [error, setError] = useState("");
+  const [downtimeOpen, setDowntimeOpen] = useState(initialDowntimes.length > 0);
   const wasPendingRef = useRef(false);
 
   function updateHole(key: string, field: "code" | "meters", value: string) {
@@ -122,6 +134,7 @@ export function PerfuracaoFormFields({
   }
 
   function addDowntime() {
+    setDowntimeOpen(true);
     setDowntimes((current) => [...current, blankDowntime()]);
   }
 
@@ -254,100 +267,136 @@ export function PerfuracaoFormFields({
       setError("");
       setHoles([blankHole("new-0")]);
       setDowntimes([]);
+      setDowntimeOpen(false);
     }
   }, [pending]);
 
+  const completedHoles = holes.filter((hole) => hole.code.trim() && hole.meters.trim());
+  const totalMeters = completedHoles.reduce((total, hole) => total + parseInputNumber(hole.meters), 0);
+  const totalDowntimeHours = downtimes.reduce((total, downtime) => total + parseInputNumber(downtime.hours), 0);
+
   return (
     <div className="holes-form" ref={containerRef}>
-      <div className="holes-head">
-        <strong>Furos do dia</strong>
-        <button className="secondary compact" type="button" onClick={addHole}>+ Adicionar furo</button>
-      </div>
-      {error ? <p className="inline-form-error">{error}</p> : null}
-      {holes.map((hole, index) => (
-        <div className="hole-row" key={hole.key}>
-          <label>
-            ID do furo
-            <span className="hole-code-control">
-              <input
-                name="holeCode"
-                inputMode="text"
-                placeholder={`F${index + 1} ou AUX`}
-                value={hole.code}
-                data-hole-field="code"
-                data-hole-index={index}
-                onChange={(event) => updateHole(hole.key, "code", event.target.value)}
-                onBlur={() => normalizeHoleCodeOnBlur(hole.key)}
-                onKeyDown={(event) => handleHoleKeyDown(event, index, "code")}
-              />
-            </span>
-          </label>
-          <label>
-            Metros perfurados
-            <input
-              name="holeMeters"
-              inputMode="decimal"
-              placeholder="0,00"
-              value={hole.meters}
-              data-hole-field="meters"
-              data-hole-index={index}
-              onChange={(event) => updateHole(hole.key, "meters", event.target.value)}
-              onKeyDown={(event) => handleHoleKeyDown(event, index, "meters")}
-            />
-          </label>
-          <button className="icon-danger" type="button" tabIndex={-1} onClick={() => removeHole(hole.key)} aria-label="Remover furo">
-            x
-          </button>
-        </div>
-      ))}
-      <div className="downtime-section">
+      <section className="hole-entry-section">
         <div className="holes-head">
-          <strong>Horas paradas</strong>
-          <button className="secondary compact" type="button" onClick={addDowntime}>+ Adicionar parada</button>
+          <div className="form-section-title">
+            <span className="section-icon"><Drill size={19} /></span>
+            <div>
+              <strong>Furos do dia</strong>
+              <small>{completedHoles.length} preenchidos | {totalMeters.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m</small>
+            </div>
+          </div>
+          <button className="secondary compact icon-button-label" type="button" onClick={addHole}><CirclePlus size={17} /> Novo furo</button>
         </div>
-        {downtimes.length === 0 ? <p className="muted-text">Opcional. Use quando a equipe ficou parada por topografia, diesel, manutenção ou outro motivo.</p> : null}
-        {downtimes.map((downtime) => (
-          <div className="downtime-row" key={downtime.key}>
-            <label>
-              Horas
-              <input
-                name="downtimeHours"
-                inputMode="decimal"
-                placeholder="0,00"
-                value={downtime.hours}
-                onChange={(event) => updateDowntime(downtime.key, "hours", event.target.value)}
-              />
-            </label>
-            <label>
-              Motivo
-              <select
-                name="downtimeReason"
-                value={downtime.reason}
-                onChange={(event) => updateDowntime(downtime.key, "reason", event.target.value)}
-              >
-                <option value="">Selecione</option>
-                {DOWNTIME_REASONS.map((reason) => <option key={reason}>{reason}</option>)}
-              </select>
-            </label>
-            {downtime.reason === "Outro" ? (
+        {error ? <p className="inline-form-error">{error}</p> : null}
+        <div className="hole-input-list">
+          {holes.map((hole, index) => (
+            <div className="hole-row" key={hole.key}>
+              <span className="hole-row-number">{index + 1}</span>
               <label>
-                Outro motivo
+                ID do furo
+                <span className="hole-code-control">
+                  <input
+                    name="holeCode"
+                    inputMode="text"
+                    placeholder={`F${index + 1} ou AUX`}
+                    value={hole.code}
+                    data-hole-field="code"
+                    data-hole-index={index}
+                    onChange={(event) => updateHole(hole.key, "code", event.target.value)}
+                    onBlur={() => normalizeHoleCodeOnBlur(hole.key)}
+                    onKeyDown={(event) => handleHoleKeyDown(event, index, "code")}
+                  />
+                </span>
+              </label>
+              <label>
+                Metros
                 <input
-                  name="downtimeOtherReason"
-                  placeholder="Descreva o motivo"
-                  value={downtime.otherReason}
-                  onChange={(event) => updateDowntime(downtime.key, "otherReason", event.target.value)}
+                  name="holeMeters"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  value={hole.meters}
+                  data-hole-field="meters"
+                  data-hole-index={index}
+                  onChange={(event) => updateHole(hole.key, "meters", event.target.value)}
+                  onKeyDown={(event) => handleHoleKeyDown(event, index, "meters")}
                 />
               </label>
-            ) : (
-              <input type="hidden" name="downtimeOtherReason" value="" />
-            )}
-            <button className="icon-danger" type="button" tabIndex={-1} onClick={() => removeDowntime(downtime.key)} aria-label="Remover parada">
-              x
-            </button>
+              <button className="icon-danger" type="button" tabIndex={-1} onClick={() => removeHole(hole.key)} aria-label="Remover furo">
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className={`form-disclosure downtime-disclosure ${downtimeOpen ? "is-open" : ""}`}>
+        <button
+          className="disclosure-toggle"
+          type="button"
+          aria-expanded={downtimeOpen}
+          onClick={() => setDowntimeOpen((current) => !current)}
+        >
+          <span className="form-section-title">
+            <span className="section-icon"><PauseCircle size={19} /></span>
+            <span>
+              <strong>Horas paradas</strong>
+              <small>{downtimes.length > 0 ? `${downtimes.length} registros | ${totalDowntimeHours.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} h` : "Opcional"}</small>
+            </span>
+          </span>
+          <ChevronDown size={19} />
+        </button>
+
+        {downtimeOpen ? (
+          <div className="disclosure-content">
+            <div className="disclosure-actions">
+              <span>{downtimes.length === 0 ? "Nenhuma parada registrada." : "Registre somente o tempo em que a equipe ficou parada."}</span>
+              <button className="secondary compact icon-button-label" type="button" onClick={addDowntime}><CirclePlus size={17} /> Adicionar parada</button>
+            </div>
+            {downtimes.map((downtime) => (
+              <div className="downtime-row" key={downtime.key}>
+                <label>
+                  Horas
+                  <input
+                    name="downtimeHours"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={downtime.hours}
+                    onChange={(event) => updateDowntime(downtime.key, "hours", event.target.value)}
+                  />
+                </label>
+                <label>
+                  Motivo
+                  <select
+                    name="downtimeReason"
+                    value={downtime.reason}
+                    onChange={(event) => updateDowntime(downtime.key, "reason", event.target.value)}
+                  >
+                    <option value="">Selecione</option>
+                    {DOWNTIME_REASONS.map((reason) => <option key={reason}>{reason}</option>)}
+                  </select>
+                </label>
+                {downtime.reason === "Outro" ? (
+                  <label>
+                    Outro motivo
+                    <input
+                      name="downtimeOtherReason"
+                      placeholder="Descreva o motivo"
+                      value={downtime.otherReason}
+                      onChange={(event) => updateDowntime(downtime.key, "otherReason", event.target.value)}
+                    />
+                  </label>
+                ) : (
+                  <input type="hidden" name="downtimeOtherReason" value="" />
+                )}
+                <button className="icon-danger" type="button" tabIndex={-1} onClick={() => removeDowntime(downtime.key)} aria-label="Remover parada">
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        ) : null}
+      </section>
     </div>
   );
 }

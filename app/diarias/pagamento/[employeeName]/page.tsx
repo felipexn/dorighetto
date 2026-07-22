@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, CircleMinus, CirclePlus, Trash2, WalletCards } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { addPayrollAdditionAction, addPayrollAdvanceAction, deletePayrollAdditionAction, deletePayrollAdvanceAction } from "@/app/actions";
@@ -76,79 +76,84 @@ export default async function PagamentoDiariaPage({ params }: Props) {
       />
 
       {canWrite ? (
-        <section className="panel advance-panel">
-          <div>
-            <span className="eyebrow">Vales pendentes</span>
-            <h2>Adicionar vale antes do pagamento</h2>
-            <p>O vale fica salvo para este funcionário. Se o pagamento for confirmado, ele será descontado no recibo.</p>
+        <details className="panel advance-panel payment-adjustments" open={advances.length > 0 || additions.length > 0}>
+          <summary className="payment-adjustment-summary">
+            <span className="form-section-title">
+              <span className="section-icon large"><WalletCards size={22} /></span>
+              <span>
+                <strong>Ajustes do pagamento</strong>
+                <small>Vales e acréscimos antes de pagar</small>
+              </span>
+            </span>
+            <span className="adjustment-summary-values">
+              {decimalToNumber(totalAddition) > 0 ? <strong className="positive">+ {formatCurrency(decimalToNumber(totalAddition))}</strong> : null}
+              {decimalToNumber(totalAdvance) > 0 ? <strong className="negative">- {formatCurrency(decimalToNumber(totalAdvance))}</strong> : null}
+              <ChevronDown size={20} />
+            </span>
+          </summary>
+
+          <div className="adjustment-content">
+            <div className="adjustment-form-grid">
+              <form className="adjustment-card addition" action={addPayrollAdditionAction}>
+                <input type="hidden" name="employeeName" value={employeeName} />
+                <div className="adjustment-card-title"><CirclePlus size={20} /><div><strong>Acréscimo</strong><small>Valor que será somado</small></div></div>
+                <label>Valor<input name="amount" inputMode="decimal" placeholder="R$ 0,00" required /></label>
+                <label>Motivo<input name="notes" placeholder="Ex: produção ou premiação" required /></label>
+                <button type="submit"><CirclePlus size={17} /> Adicionar acréscimo</button>
+              </form>
+
+              <form className="adjustment-card discount" action={addPayrollAdvanceAction}>
+                <input type="hidden" name="employeeName" value={employeeName} />
+                <div className="adjustment-card-title"><CircleMinus size={20} /><div><strong>Vale ou desconto</strong><small>Valor que será descontado</small></div></div>
+                <label>Valor<input name="amount" inputMode="decimal" placeholder="R$ 0,00" required /></label>
+                <label>Motivo<input name="notes" placeholder="Ex: transporte ou adiantamento" required /></label>
+                <button type="submit"><CircleMinus size={17} /> Adicionar vale</button>
+              </form>
+            </div>
+
+            <div className="adjustment-list-grid">
+              <section>
+                <h3>Acréscimos pendentes</h3>
+                {additions.length === 0 ? <p className="adjustment-empty">Nenhum acréscimo.</p> : additions.map((addition) => (
+                  <article className="advance-item addition" key={addition.id}>
+                    <div>
+                      <strong>+ {formatCurrency(decimalToNumber(addition.amount))}</strong>
+                      <span>{addition.notes}</span>
+                      <small>{formatDate(addition.createdAt)}</small>
+                    </div>
+                    <form action={deletePayrollAdditionAction}>
+                      <input type="hidden" name="id" value={addition.id} />
+                      <input type="hidden" name="employeeName" value={employeeName} />
+                      <ConfirmSubmitButton className="icon-danger" aria-label="Remover acréscimo pendente" message="Remover este acréscimo pendente?">
+                        <Trash2 size={16} />
+                      </ConfirmSubmitButton>
+                    </form>
+                  </article>
+                ))}
+              </section>
+
+              <section>
+                <h3>Vales pendentes</h3>
+                {advances.length === 0 ? <p className="adjustment-empty">Nenhum vale.</p> : advances.map((advance) => (
+                  <article className="advance-item discount" key={advance.id}>
+                    <div>
+                      <strong>- {formatCurrency(decimalToNumber(advance.amount))}</strong>
+                      <span>{advance.notes}</span>
+                      <small>{formatDate(advance.createdAt)}</small>
+                    </div>
+                    <form action={deletePayrollAdvanceAction}>
+                      <input type="hidden" name="id" value={advance.id} />
+                      <input type="hidden" name="employeeName" value={employeeName} />
+                      <ConfirmSubmitButton className="icon-danger" aria-label="Remover vale pendente" message="Remover este vale pendente?">
+                        <Trash2 size={16} />
+                      </ConfirmSubmitButton>
+                    </form>
+                  </article>
+                ))}
+              </section>
+            </div>
           </div>
-
-          <form className="advance-form" action={addPayrollAdvanceAction}>
-            <input type="hidden" name="employeeName" value={employeeName} />
-            <label>
-              Valor do vale
-              <input name="amount" placeholder="0,00" required />
-            </label>
-            <label className="wide-field">
-              Observação / motivo
-              <input name="notes" placeholder="Ex: vale transporte, adiantamento, compra..." required />
-            </label>
-            <button type="submit">Salvar vale</button>
-          </form>
-
-          <form className="advance-form" action={addPayrollAdditionAction}>
-            <input type="hidden" name="employeeName" value={employeeName} />
-            <label>
-              Valor do acréscimo
-              <input name="amount" placeholder="0,00" required />
-            </label>
-            <label className="wide-field">
-              Observação / motivo
-              <input name="notes" placeholder="Ex: produção, ajuste, premiação..." required />
-            </label>
-            <button type="submit">Salvar acréscimo</button>
-          </form>
-
-          <div className="advance-list">
-            {additions.length === 0 ? (
-              <p className="muted-text">Nenhum acréscimo pendente para somar neste pagamento.</p>
-            ) : additions.map((addition) => (
-              <article className="advance-item" key={addition.id}>
-                <div>
-                  <strong>+ {formatCurrency(decimalToNumber(addition.amount))}</strong>
-                  <span>{addition.notes}</span>
-                  <small>Lançado em {formatDate(addition.createdAt)}</small>
-                </div>
-                <form action={deletePayrollAdditionAction}>
-                  <input type="hidden" name="id" value={addition.id} />
-                  <input type="hidden" name="employeeName" value={employeeName} />
-                  <ConfirmSubmitButton className="icon-danger" aria-label="Remover acréscimo pendente" message="Remover este acréscimo pendente?">
-                    <Trash2 size={16} />
-                  </ConfirmSubmitButton>
-                </form>
-              </article>
-            ))}
-
-            {advances.length === 0 ? (
-              <p className="muted-text">Nenhum vale pendente para descontar neste pagamento.</p>
-            ) : advances.map((advance) => (
-              <article className="advance-item" key={advance.id}>
-                <div>
-                  <strong>{formatCurrency(decimalToNumber(advance.amount))}</strong>
-                  <span>{advance.notes}</span>
-                  <small>Lançado em {formatDate(advance.createdAt)}</small>
-                </div>
-                <form action={deletePayrollAdvanceAction}>
-                  <input type="hidden" name="id" value={advance.id} />
-                  <input type="hidden" name="employeeName" value={employeeName} />
-                  <ConfirmSubmitButton className="icon-danger" aria-label="Remover vale pendente" message="Remover este vale pendente?">
-                    <Trash2 size={16} />
-                  </ConfirmSubmitButton>
-                </form>
-              </article>
-            ))}
-          </div>
-        </section>
+        </details>
       ) : null}
 
       <section className="pdf-preview-wrap">
@@ -192,7 +197,7 @@ export default async function PagamentoDiariaPage({ params }: Props) {
 
           {additions.length > 0 ? (
             <div className="pdf-advance-box">
-              <strong>Acr?scimos a somar</strong>
+              <strong>Acréscimos a somar</strong>
               {additions.map((addition) => (
                 <div key={addition.id}>
                   <span>{addition.notes}</span>
@@ -218,7 +223,7 @@ export default async function PagamentoDiariaPage({ params }: Props) {
             <div><span>Total de diárias</span><strong>{formatCurrency(decimalToNumber(totalDaily))}</strong></div>
             <div><span>Quantidade H.E.</span><strong>{totalOvertimeHours.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}h</strong></div>
             <div><span>Total horas extras</span><strong>{formatCurrency(decimalToNumber(totalOvertime))}</strong></div>
-            <div><span>Acr?scimos pendentes</span><strong>+ {formatCurrency(decimalToNumber(totalAddition))}</strong></div>
+            <div><span>Acréscimos pendentes</span><strong>+ {formatCurrency(decimalToNumber(totalAddition))}</strong></div>
             <div><span>Vales pendentes</span><strong>- {formatCurrency(decimalToNumber(totalAdvance))}</strong></div>
             <div className="grand-total"><span>Total líquido a pagar</span><strong>{totalNetFormatted}</strong></div>
           </div>

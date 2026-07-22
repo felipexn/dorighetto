@@ -2,11 +2,11 @@
 
 import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { useMemo, useState, useTransition } from "react";
-import { Award, BarChart3, CalendarDays, Clock, Gauge, Target, TrendingUp } from "lucide-react";
+import { Award, BarChart3, CalendarDays, Clock, Fuel, Gauge, Target, TrendingUp } from "lucide-react";
 import { PrintReportButton } from "@/components/print-report-button";
 import { drillingShiftOptions } from "@/lib/drilling";
-import type { ChartItem, DrillingReportData, DrillingReportFilters, DrillingReportSummary } from "@/lib/drilling-report-data";
-import { availabilityLabel, hoursLabel, metersLabel, metersPerHourLabel, shortNumber } from "@/lib/drilling-report-data";
+import type { ChartItem, DrillingFuelReportEntry, DrillingReportData, DrillingReportFilters, DrillingReportSummary } from "@/lib/drilling-report-data";
+import { availabilityLabel, hoursLabel, litersLabel, metersLabel, metersPerHourLabel, shortNumber } from "@/lib/drilling-report-data";
 
 type ChartStyle = CSSProperties & {
   "--bar-width"?: string;
@@ -50,7 +50,17 @@ function MetricCard({ icon, label, value }: { icon: ReactNode; label: string; va
   );
 }
 
-function EvolutionLineChart({ items }: { items: ChartItem[] }) {
+function EvolutionLineChart({
+  items,
+  title = "Evolução de metros perfurados",
+  ariaLabel = "Evolução de metros perfurados",
+  unit = "m"
+}: {
+  items: ChartItem[];
+  title?: string;
+  ariaLabel?: string;
+  unit?: string;
+}) {
   const width = 900;
   const height = 360;
   const padX = 58;
@@ -72,19 +82,19 @@ function EvolutionLineChart({ items }: { items: ChartItem[] }) {
   return (
     <section className="panel analytics-card line-analysis-card">
       <div className="analytics-card-head">
-        <div><span>Análise</span><h2>Evolução de metros perfurados</h2></div>
+        <div><span>Análise</span><h2>{title}</h2></div>
         <strong>{items.length} datas</strong>
       </div>
       {items.length === 0 ? <p className="muted-text">Sem dados no filtro atual.</p> : null}
       {items.length > 0 ? (
         <div className="line-chart-wrap">
-          <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Evolução de metros perfurados">
+          <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={ariaLabel}>
             {steps.map((step) => {
               const y = padTop + (1 - step) * (plotBottom - padTop);
               return (
                 <g key={step}>
                   <line x1={padX} x2={width - padX} y1={y} y2={y} />
-                  <text x={padX - 16} y={y + 5}>{shortNumber(max * step)} m</text>
+                  <text x={padX - 16} y={y + 5}>{shortNumber(max * step)} {unit}</text>
                 </g>
               );
             })}
@@ -126,12 +136,20 @@ function OperationalSummary({ summary, recordCount }: { summary: DrillingReportS
   );
 }
 
-function TeamProduction({ items }: { items: ChartItem[] }) {
+function ProductionBlocks({
+  items,
+  title = "Produção por equipe",
+  valueLabel = metersLabel
+}: {
+  items: ChartItem[];
+  title?: string;
+  valueLabel?: (value: number) => string;
+}) {
   const max = Math.max(...items.map((item) => item.value), 1);
   return (
     <section className="panel analytics-card team-production-card">
       <div className="analytics-card-head">
-        <div><span>Análise</span><h2>Produção por equipe</h2></div>
+        <div><span>Análise</span><h2>{title}</h2></div>
         <strong>Top {Math.min(items.length, 4)}</strong>
       </div>
       <div className="team-block-grid">
@@ -140,7 +158,7 @@ function TeamProduction({ items }: { items: ChartItem[] }) {
           <div className="team-production-block" key={item.label}>
             <span>{index + 1}</span>
             <strong>{item.label || "Não informado"}</strong>
-            <small>{metersLabel(item.value)}</small>
+            <small>{valueLabel(item.value)}</small>
             <div style={{ "--bar-width": `${Math.max((item.value / max) * 100, 8)}%` } as ChartStyle} />
           </div>
         ))}
@@ -209,6 +227,24 @@ function ReportRanking({ title, items, valueLabel = metersLabel }: { title: stri
           <span>{index + 1}</span>
           <strong>{item.label || "Não informado"}</strong>
           <small>{valueLabel(item.value)}</small>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FuelEntryList({ entries }: { entries: DrillingFuelReportEntry[] }) {
+  return (
+    <div className="report-daily-table fuel-report-list">
+      <h3>Abastecimentos no período</h3>
+      {entries.length === 0 ? <p className="muted-text">Nenhum abastecimento registrado no período.</p> : null}
+      {entries.map((entry, index) => (
+        <div className="report-daily-row" key={`${entry.date}-${entry.machineName}-${index}`}>
+          <div>
+            <strong>{new Date(entry.date).toLocaleDateString("pt-BR", { timeZone: "UTC" })} | {entry.machineName}</strong>
+            <small>{entry.notes || "Sem observação"}</small>
+          </div>
+          <strong>{litersLabel(entry.quantity)}</strong>
         </div>
       ))}
     </div>
@@ -307,6 +343,11 @@ export function DrillingReportDashboard({ initialData }: Props) {
             <div><span>Banco mais furado</span><strong>{data.reportSummary.topBank?.label ?? "-"}</strong><small>{data.reportSummary.topBank ? metersLabel(data.reportSummary.topBank.value) : "Sem dados"}</small></div>
             <div><span>Fichas lançadas</span><strong>{data.reportRecordsCount}</strong></div>
             <div><span>Total de furos</span><strong>{data.reportSummary.totalFuros}</strong></div>
+            <div><span>Diesel abastecido</span><strong>{litersLabel(data.reportFuelSummary.totalLitros)}</strong></div>
+            <div><span>Média de diesel por dia</span><strong>{litersLabel(data.reportFuelSummary.mediaLitrosDia)}</strong></div>
+            <div><span>Média por abastecimento</span><strong>{litersLabel(data.reportFuelSummary.mediaLitrosAbastecimento)}</strong></div>
+            <div><span>Abastecimentos</span><strong>{data.reportFuelSummary.totalAbastecimentos}</strong><small>{data.reportFuelSummary.diasComAbastecimento} dias com registro</small></div>
+            <div><span>Perfuratriz mais abastecida</span><strong>{data.reportFuelSummary.topMachine?.label ?? "-"}</strong><small>{data.reportFuelSummary.topMachine ? litersLabel(data.reportFuelSummary.topMachine.value) : "Sem dados"}</small></div>
           </div>
 
           <div className="report-details-grid">
@@ -318,7 +359,11 @@ export function DrillingReportDashboard({ initialData }: Props) {
             <ReportRanking title="Produção/hora por perfuratriz" items={data.reportSummary.productionPerHourByMachine} valueLabel={metersPerHourLabel} />
             <ReportRanking title="Paradas por motivo" items={data.reportSummary.byDowntimeReason} valueLabel={hoursLabel} />
             <ReportRanking title="Equipes com horas paradas" items={data.reportSummary.downtimeByTeam} valueLabel={hoursLabel} />
+            <ReportRanking title="Diesel por perfuratriz" items={data.reportFuelSummary.byMachine} valueLabel={litersLabel} />
+            <ReportRanking title="Diesel por dia" items={data.reportFuelSummary.byDate} valueLabel={litersLabel} />
           </div>
+
+          <FuelEntryList entries={data.reportFuelEntries} />
         </section>
       ) : null}
 
@@ -379,8 +424,37 @@ export function DrillingReportDashboard({ initialData }: Props) {
       <section className="analytics-dashboard-grid section-gap no-print">
         <EvolutionLineChart items={data.filteredSummary.byDate} />
         <OperationalSummary summary={data.filteredSummary} recordCount={data.recordsCount} />
-        <TeamProduction items={data.filteredSummary.byTeam} />
+        <ProductionBlocks items={data.filteredSummary.byTeam} />
         <BankParticipation items={data.filteredSummary.byBank} total={data.filteredSummary.totalMetros} />
+      </section>
+
+      <section className="analytics-section-heading section-gap no-print">
+        <span className="eyebrow">Abastecimento</span>
+        <h2>Análise de diesel</h2>
+        <p>Consumo registrado no período e na perfuratriz selecionada.</p>
+      </section>
+
+      <section className="analytics-metric-grid section-gap no-print">
+        <MetricCard icon={<Fuel size={18} />} label="Diesel abastecido" value={litersLabel(data.filteredFuelSummary.totalLitros)} />
+        <MetricCard icon={<TrendingUp size={18} />} label="Média por dia" value={litersLabel(data.filteredFuelSummary.mediaLitrosDia)} />
+        <MetricCard icon={<Gauge size={18} />} label="Média por abastecimento" value={litersLabel(data.filteredFuelSummary.mediaLitrosAbastecimento)} />
+        <MetricCard icon={<CalendarDays size={18} />} label="Abastecimentos" value={String(data.filteredFuelSummary.totalAbastecimentos)} />
+        <MetricCard icon={<Award size={18} />} label="Mais abastecida" value={data.filteredFuelSummary.topMachine?.label ?? "-"} />
+        <MetricCard icon={<CalendarDays size={18} />} label="Dias abastecidos" value={String(data.filteredFuelSummary.diasComAbastecimento)} />
+      </section>
+
+      <section className="analytics-dashboard-grid section-gap no-print">
+        <EvolutionLineChart
+          items={data.filteredFuelSummary.byDate}
+          title="Evolução diária do diesel"
+          ariaLabel="Evolução diária dos litros de diesel abastecidos"
+          unit="L"
+        />
+        <ProductionBlocks
+          items={data.filteredFuelSummary.byMachine}
+          title="Diesel por perfuratriz"
+          valueLabel={litersLabel}
+        />
       </section>
     </div>
   );
