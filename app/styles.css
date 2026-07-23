@@ -1205,6 +1205,15 @@ textarea:focus {
   grid-template-columns: 120px 1.2fr 1.2fr 80px 130px 120px 120px;
 }
 
+.closures.can-reopen .daily-row {
+  grid-template-columns: 120px 1.2fr 1.2fr 80px 130px 120px 120px 120px;
+}
+
+.closures .row-actions form,
+.closures .row-actions button {
+  width: 100%;
+}
+
 .receipt-lines .daily-row {
   grid-template-columns: 110px 130px 100px 120px 130px 130px;
 }

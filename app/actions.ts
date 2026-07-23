@@ -609,6 +609,54 @@ export async function payFortnightAction(formData: FormData) {
   redirect(`/diarias/fechamento/${closure.id}`);
 }
 
+export async function reopenPayrollClosureAction(formData: FormData) {
+  await requireModuleWrite("diarias");
+
+  const closureId = requiredText(formData, "closureId");
+
+  const closure = await prisma.$transaction(async (tx) => {
+    const existingClosure = await tx.payrollClosure.findUnique({
+      where: {
+        id: closureId
+      },
+      select: {
+        id: true,
+        employeeName: true
+      }
+    });
+
+    if (!existingClosure) {
+      throw new Error("Pagamento não encontrado ou já desfeito.");
+    }
+
+    await tx.dailyEntry.updateMany({
+      where: { closureId },
+      data: { status: "PENDENTE", closureId: null }
+    });
+
+    await tx.payrollAdvance.updateMany({
+      where: { closureId },
+      data: { status: "PENDENTE", closureId: null }
+    });
+
+    await tx.payrollAddition.updateMany({
+      where: { closureId },
+      data: { status: "PENDENTE", closureId: null }
+    });
+
+    await tx.payrollClosure.delete({
+      where: { id: closureId }
+    });
+
+    return existingClosure;
+  });
+
+  revalidatePath("/diarias");
+  revalidatePath("/diarias/historico");
+  revalidatePath(`/diarias/fechamento/${closure.id}`);
+  redirect(`/diarias?funcionario=${encodeURIComponent(closure.employeeName)}&funcao=&status=PENDENTE`);
+}
+
 export async function createDrillingFuelEntryAction(formData: FormData) {
   await requireModuleWrite("perfuracao");
 
